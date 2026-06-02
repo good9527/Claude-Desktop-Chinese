@@ -124,8 +124,10 @@ $merged | ConvertTo-Json -Depth 10 -Compress | Set-Content $tempFile -Encoding U
 # Take ownership and grant write permission (required for WindowsApps)
 Write-Host "  Granting write permission..." -ForegroundColor Gray
 $resDir = Split-Path $enUsFile -Parent
-& takeown /f $resDir /a 2>&1 | Out-Null
-& icacls $resDir /grant "Administrators:F" /t 2>&1 | Out-Null
+$takeOwn = "takeown /f `"$resDir`" /a >nul 2>&1"
+$icaclsCmd = "icacls `"$resDir`" /grant Administrators:F /t >nul 2>&1"
+cmd /c $takeOwn
+cmd /c $icaclsCmd
 
 # Try multiple times with retry
 $success = $false
