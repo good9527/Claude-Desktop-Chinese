@@ -122,31 +122,45 @@ Write-Host "  Replaced $count / $($enData.PSObject.Properties.Count) strings" -F
 $tempFile = Join-Path $env:TEMP "claude-zh-patch.json"
 $merged | ConvertTo-Json -Depth 10 -Compress | Set-Content $tempFile -Encoding UTF8
 
-# Take ownership of directory (allows creating new files inside)
-Write-Host "  Granting write permission..." -ForegroundColor Gray
+# Strategy: write new file -> cmd delete old -> rename
+# (MSIX protection prevents direct overwrite, but new files + cmd delete work)
 $resDir = Split-Path $enUsFile -Parent
-cmd /c "takeown /f `"$resDir`" /a >nul 2>&1"
-cmd /c "icacls `"$resDir`" /grant Administrators:F /t >nul 2>&1"
-
-# Strategy: file itself has locked ACL, so delete it then write fresh copy
+$newFile = Join-Path $resDir "zh-CN-patched.json"
 $success = $false
-for ($i = 1; $i -le 10; $i++) {
-    try {
-        Remove-Item $enUsFile -Force -ErrorAction SilentlyContinue
-        [IO.File]::Copy($tempFile, $enUsFile, $true)
-        $success = $true
-        break
-    } catch {
-        if ($i -lt 10) {
-            Write-Host "  Retry $i/10..." -ForegroundColor DarkGray
-            Start-Sleep -Seconds 3
+
+# Step A: Write merged content as new file
+try {
+    [IO.File]::Copy($tempFile, $newFile, $true)
+    if ((Get-Item $newFile).Length -gt 0) {
+        # Step B: Delete original via cmd (cmd /c del works where Remove-Item fails)
+        cmd /c "del /f `"$enUsFile`"" 2>&1 | Out-Null
+        if (-not (Test-Path $enUsFile)) {
+            # Step C: Rename new file to original name
+            try {
+                Rename-Item $newFile "en-US.json" -ErrorAction Stop
+                $success = $true
+            } catch {
+                cmd /c "ren `"$newFile`" en-US.json" 2>&1 | Out-Null
+                if (Test-Path $enUsFile) { $success = $true }
+            }
         }
     }
+    if (-not $success) {
+        # Cleanup failed rename
+        if (Test-Path $newFile) { Remove-Item $newFile -Force -ErrorAction SilentlyContinue }
+        # Restore original if deleted
+        if (-not (Test-Path $enUsFile) -and (Test-Path $backupFile)) {
+            [IO.File]::Copy($backupFile, $enUsFile, $true)
+        }
+    }
+} catch {
+    Write-Host "  Write failed: $($_.Exception.Message)" -ForegroundColor DarkGray
+    if (Test-Path $newFile) { Remove-Item $newFile -Force -ErrorAction SilentlyContinue }
 }
 Remove-Item $tempFile -ErrorAction SilentlyContinue
 
 if (-not $success) {
-    Write-Host "  ERROR: Failed to write after 10 attempts." -ForegroundColor Red
+    Write-Host "  ERROR: Failed to apply patch." -ForegroundColor Red
     Read-Host "Press Enter to exit"
     exit 1
 }
