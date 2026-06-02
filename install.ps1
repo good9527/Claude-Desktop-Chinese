@@ -9,20 +9,21 @@ $ErrorActionPreference = "Stop"
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
     Write-Host "  Requesting admin (click Yes on UAC prompt)..." -ForegroundColor Yellow
+    Write-Host "  A new admin window will open. Check it for results." -ForegroundColor Gray
     Write-Host ""
     $tempScript = Join-Path $env:TEMP "claude_zh_install.ps1"
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     Invoke-WebRequest -Uri "https://raw.githubusercontent.com/good9527/Claude-Desktop-Chinese/main/install.ps1" -OutFile $tempScript -UseBasicParsing
-    # Fix encoding: add UTF-8 BOM so PowerShell reads Chinese correctly
+    # Add BOM for correct Chinese display in admin window
     $bytes = [IO.File]::ReadAllBytes($tempScript)
-    $bom = [byte[]]@(0xEF, 0xBB, 0xBF)
-    if ($bytes[0..2] -ne $bom) {
-        [IO.File]::WriteAllBytes($tempScript, $bom + $bytes)
+    if ($bytes.Length -lt 3 -or $bytes[0] -ne 0xEF -or $bytes[1] -ne 0xBB -or $bytes[2] -ne 0xBF) {
+        [IO.File]::WriteAllBytes($tempScript, [byte[]]@(0xEF, 0xBB, 0xBF) + $bytes)
     }
     try {
-        Start-Process -FilePath "powershell.exe" -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$tempScript`"" -Verb RunAs -Wait
+        $proc = Start-Process -FilePath "powershell.exe" -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$tempScript`"" -Verb RunAs -PassThru
+        $proc.WaitForExit()
     } catch {
-        Write-Host "  [ERROR] Failed to elevate. Run as admin manually." -ForegroundColor Red
+        Write-Host "  [ERROR] UAC cancelled or failed." -ForegroundColor Red
     }
     Remove-Item $tempScript -Force -ErrorAction SilentlyContinue
     exit 0
@@ -166,4 +167,4 @@ Write-Host "  Done! Claude is now in Chinese." -ForegroundColor Cyan
 Write-Host "  To restore English, run uninstall.ps1" -ForegroundColor Gray
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host ""
-Start-Sleep -Seconds 5
+Read-Host "Press Enter to close"
