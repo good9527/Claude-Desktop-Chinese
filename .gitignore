@@ -1,0 +1,13 @@
+# Generated files
+en-US-hacked.json
+debug.log
+
+# Python
+__pycache__/
+*.pyc
+
+# Chunks (translation work files, can be regenerated)
+chunks/
+
+# Temp
+*.tmp
