@@ -12,6 +12,15 @@ Write-Host "  Claude 桌面版中文汉化补丁" -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host ""
 
+# --- Admin check ---
+$isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+if (-not $isAdmin) {
+    Write-Host "  [ERROR] 需要管理员权限运行此脚本。" -ForegroundColor Red
+    Write-Host "  请右键 PowerShell -> 以管理员身份运行，然后重新执行命令。" -ForegroundColor Yellow
+    Read-Host "Press Enter to exit"
+    exit 1
+}
+
 # --- Step 1: Detect Claude ---
 Write-Host "[1/5] Detecting Claude..." -ForegroundColor Yellow
 $claude = Get-AppxPackage -Name 'Claude' -ErrorAction SilentlyContinue
@@ -67,7 +76,15 @@ Write-Host "  Loaded $($zhData.PSObject.Properties.Count) translations." -Foregr
 Write-Host ""
 Write-Host "[3/5] Closing Claude..." -ForegroundColor Yellow
 Get-Process -Name 'Claude' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-Start-Sleep -Seconds 3
+# Wait until Claude is fully gone (max 15 seconds)
+for ($w = 1; $w -le 15; $w++) {
+    if (-not (Get-Process -Name 'Claude' -ErrorAction SilentlyContinue)) {
+        break
+    }
+    Start-Sleep -Seconds 1
+}
+# Extra settle time for file handles to release
+Start-Sleep -Seconds 2
 Write-Host "  Done." -ForegroundColor Green
 
 # --- Step 4: Backup & merge ---
@@ -103,21 +120,25 @@ Write-Host "  Replaced $count / $($enData.PSObject.Properties.Count) strings" -F
 $tempFile = Join-Path $env:TEMP "claude-zh-patch.json"
 $merged | ConvertTo-Json -Depth 10 -Compress | Set-Content $tempFile -Encoding UTF8
 
-# Try multiple times with retry
+# Retry with longer waits (10 attempts, 3 seconds apart)
 $success = $false
-for ($i = 1; $i -le 5; $i++) {
+for ($i = 1; $i -le 10; $i++) {
     try {
         [IO.File]::Copy($tempFile, $enUsFile, $true)
         $success = $true
         break
     } catch {
-        Start-Sleep -Seconds 2
+        if ($i -lt 10) {
+            Write-Host "  Retry $i/10..." -ForegroundColor DarkGray
+            Start-Sleep -Seconds 3
+        }
     }
 }
 Remove-Item $tempFile -ErrorAction SilentlyContinue
 
 if (-not $success) {
-    Write-Host "  ERROR: Failed to write. File may be locked." -ForegroundColor Red
+    Write-Host "  ERROR: Failed to write after 10 attempts." -ForegroundColor Red
+    Write-Host "  请关闭所有 Claude 相关窗口后重试。" -ForegroundColor Yellow
     Read-Host "Press Enter to exit"
     exit 1
 }
