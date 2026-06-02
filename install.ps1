@@ -15,18 +15,28 @@ Write-Host ""
 # --- Auto-elevate to admin if needed ---
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
-    Write-Host "  需要管理员权限写入 Claude 目录，正在请求提权..." -ForegroundColor Yellow
+    Write-Host "  需要管理员权限写入 Claude 目录，正在下载并提权..." -ForegroundColor Yellow
     Write-Host "  请在弹出的 UAC 窗口点击'是'" -ForegroundColor Cyan
-    # Save script to temp file and relaunch as admin
-    $scriptContent = $MyInvocation.MyCommand.ScriptBlock.ToString()
+    # Download script to temp file (MyInvocation.ScriptBlock is null in iex context)
     $tempScript = Join-Path $env:TEMP "claude_zh_install.ps1"
-    [IO.File]::WriteAllText($tempScript, $scriptContent, [Text.Encoding]::UTF8)
     try {
-        $proc = Start-Process -FilePath "powershell.exe" -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$tempScript`" -Elevated" -Verb RunAs -PassThru
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        Invoke-WebRequest -Uri "https://raw.githubusercontent.com/good9527/Claude-Desktop-Chinese/main/install.ps1" -OutFile $tempScript -UseBasicParsing
+    } catch {
+        # Fallback: try using ScriptBlock if available
+        if ($MyInvocation.MyCommand.ScriptBlock) {
+            [IO.File]::WriteAllText($tempScript, $MyInvocation.MyCommand.ScriptBlock.ToString(), [Text.Encoding]::UTF8)
+        } else {
+            Write-Host "  [ERROR] 无法下载脚本，请手动以管理员身份运行" -ForegroundColor Red
+            Read-Host "Press Enter to exit"
+            exit 1
+        }
+    }
+    try {
+        $proc = Start-Process -FilePath "powershell.exe" -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$tempScript`"" -Verb RunAs -PassThru
         $proc.WaitForExit()
     } catch {
         Write-Host "  [ERROR] 提权失败: $($_.Exception.Message)" -ForegroundColor Red
-        Write-Host "  请手动以管理员身份运行 PowerShell" -ForegroundColor Yellow
     }
     Remove-Item $tempScript -Force -ErrorAction SilentlyContinue
     exit 0
@@ -133,9 +143,10 @@ $merged | ConvertTo-Json -Depth 10 -Compress | Set-Content $tempFile -Encoding U
 
 # Ensure we have write permission to the target file
 $resDir = Split-Path $enUsFile -Parent
-cmd /c "takeown /f `"$resDir`" /a >nul 2>&1"
-cmd /c "icacls `"$resDir`" /grant Administrators:F /t >nul 2>&1"
-cmd /c "icacls `"$enUsFile`" /grant Administrators:F >nul 2>&1"
+Write-Host "  Acquiring permissions..." -ForegroundColor Gray
+& takeown /f $resDir /a 2>&1 | Out-Null
+& icacls $resDir /grant "Administrators:F" /t 2>&1 | Out-Null
+& icacls $enUsFile /grant "Administrators:F" 2>&1 | Out-Null
 
 # Try multiple write methods with retries (10 attempts, 3 seconds apart)
 $success = $false
