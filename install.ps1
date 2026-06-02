@@ -12,15 +12,6 @@ Write-Host "  Claude 桌面版中文汉化补丁" -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host ""
 
-# --- Admin check ---
-$isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-if (-not $isAdmin) {
-    Write-Host "  [ERROR] 需要管理员权限运行此脚本。" -ForegroundColor Red
-    Write-Host "  请右键 PowerShell -> 以管理员身份运行，然后重新执行命令。" -ForegroundColor Yellow
-    Read-Host "Press Enter to exit"
-    exit 1
-}
-
 # --- Step 1: Detect Claude ---
 Write-Host "[1/5] Detecting Claude..." -ForegroundColor Yellow
 $claude = Get-AppxPackage -Name 'Claude' -ErrorAction SilentlyContinue
