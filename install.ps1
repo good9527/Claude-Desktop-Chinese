@@ -37,8 +37,14 @@ Write-Host ""
 Write-Host "[2/5] Loading translations..." -ForegroundColor Yellow
 
 # Try local path first, then download from GitHub
-$dictFile = Join-Path $PSScriptRoot "dist\zh-CN.json"
-if (-not (Test-Path $dictFile)) {
+$dictFile = $null
+if ($PSScriptRoot) {
+    $localDict = Join-Path $PSScriptRoot "dist\zh-CN.json"
+    if (Test-Path $localDict) {
+        $dictFile = $localDict
+    }
+}
+if (-not $dictFile) {
     # Online mode: download from GitHub
     Write-Host "  Downloading zh-CN.json from GitHub..." -ForegroundColor Gray
     $dictUrl = "https://raw.githubusercontent.com/good9527/Claude-Desktop-Chinese/main/dist/zh-CN.json"
