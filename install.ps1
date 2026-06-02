@@ -8,16 +8,21 @@ $ErrorActionPreference = "Stop"
 # --- Auto-elevate to admin if needed (required for WindowsApps write) ---
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
-    Write-Host "  需要管理员权限，正在请求提权..." -ForegroundColor Yellow
-    Write-Host "  请在弹出的 UAC 窗口点击'是'" -ForegroundColor Cyan
+    Write-Host "  Requesting admin (click Yes on UAC prompt)..." -ForegroundColor Yellow
     Write-Host ""
     $tempScript = Join-Path $env:TEMP "claude_zh_install.ps1"
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     Invoke-WebRequest -Uri "https://raw.githubusercontent.com/good9527/Claude-Desktop-Chinese/main/install.ps1" -OutFile $tempScript -UseBasicParsing
+    # Fix encoding: add UTF-8 BOM so PowerShell reads Chinese correctly
+    $bytes = [IO.File]::ReadAllBytes($tempScript)
+    $bom = [byte[]]@(0xEF, 0xBB, 0xBF)
+    if ($bytes[0..2] -ne $bom) {
+        [IO.File]::WriteAllBytes($tempScript, $bom + $bytes)
+    }
     try {
         Start-Process -FilePath "powershell.exe" -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$tempScript`"" -Verb RunAs -Wait
     } catch {
-        Write-Host "  [ERROR] 提权失败，请手动右键管理员运行。" -ForegroundColor Red
+        Write-Host "  [ERROR] Failed to elevate. Run as admin manually." -ForegroundColor Red
     }
     Remove-Item $tempScript -Force -ErrorAction SilentlyContinue
     exit 0
@@ -61,7 +66,6 @@ if (-not (Test-Path $patchDir)) {
     New-Item -ItemType Directory -Path $patchDir -Force | Out-Null
 }
 if (-not (Test-Path $backupFile)) {
-    # First install: save original English file
     [IO.File]::Copy($enUsFile, $backupFile, $true)
     Write-Host "  Backup saved to: $backupFile" -ForegroundColor Green
 } else {
@@ -99,11 +103,9 @@ if (-not (Test-Path $dictFile)) {
     exit 1
 }
 
-# Read source files
 $enData = [IO.File]::ReadAllText($enUsFile) | ConvertFrom-Json
 $zhData = [IO.File]::ReadAllText($dictFile) | ConvertFrom-Json
 
-# Merge: replace English values with Chinese
 $merged = @{}
 $count = 0
 foreach ($prop in $enData.PSObject.Properties) {
@@ -116,11 +118,9 @@ foreach ($prop in $enData.PSObject.Properties) {
 }
 Write-Host "  Replaced $count / $($enData.PSObject.Properties.Count) strings" -ForegroundColor Green
 
-# Write to temp file first
 $tempFile = Join-Path $env:TEMP "claude-zh-patch.json"
 $merged | ConvertTo-Json -Depth 10 -Compress | Set-Content $tempFile -Encoding UTF8
 
-# Copy to target (bypass WindowsApps protection)
 [IO.File]::Copy($tempFile, $enUsFile, $true)
 Remove-Item $tempFile -ErrorAction SilentlyContinue
 Write-Host "  Patch applied!" -ForegroundColor Green
@@ -130,7 +130,6 @@ Write-Host ""
 Write-Host "[5/5] Starting Claude..." -ForegroundColor Yellow
 $claudeExe = Join-Path $installDir "app\Claude.exe"
 if (Test-Path $claudeExe) {
-    # Use cmd start to fully detach from this console session
     Start-Process "cmd.exe" -ArgumentList "/c start `"`" `"$claudeExe`"" -WindowStyle Hidden -ErrorAction SilentlyContinue
     Write-Host "  Claude started (detached)." -ForegroundColor Green
 }
@@ -141,5 +140,4 @@ Write-Host "  Done! Claude is now in Chinese." -ForegroundColor Cyan
 Write-Host "  To restore English, run uninstall.ps1" -ForegroundColor Gray
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "  窗口将在5秒后自动关闭..." -ForegroundColor Gray
 Start-Sleep -Seconds 5
