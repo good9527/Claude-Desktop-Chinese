@@ -116,21 +116,42 @@ foreach ($prop in $enData.PSObject.Properties) {
 }
 Write-Host "  Replaced $count / $($enData.PSObject.Properties.Count) strings" -ForegroundColor Green
 
-# Write to temp then copy (bypass WindowsApps protection)
+# Write merged JSON to temp file
 $tempFile = Join-Path $env:TEMP "claude-zh-patch.json"
 $merged | ConvertTo-Json -Depth 10 -Compress | Set-Content $tempFile -Encoding UTF8
 
-# Retry with longer waits (10 attempts, 3 seconds apart)
+# Ensure we have write permission to the target file
+$resDir = Split-Path $enUsFile -Parent
+cmd /c "takeown /f `"$resDir`" /a >nul 2>&1"
+cmd /c "icacls `"$resDir`" /grant Administrators:F /t >nul 2>&1"
+cmd /c "icacls `"$enUsFile`" /grant Administrators:F >nul 2>&1"
+
+# Try multiple write methods with retries (10 attempts, 3 seconds apart)
 $success = $false
 for ($i = 1; $i -le 10; $i++) {
     try {
-        [IO.File]::Copy($tempFile, $enUsFile, $true)
+        # Method 1: Copy-Item (most reliable for WindowsApps)
+        Copy-Item -Path $tempFile -Destination $enUsFile -Force -ErrorAction Stop
         $success = $true
         break
     } catch {
+        try {
+            # Method 2: .NET Copy
+            [IO.File]::Copy($tempFile, $enUsFile, $true)
+            $success = $true
+            break
+        } catch {
+            try {
+                # Method 3: cmd copy
+                cmd /c "copy /Y `"$tempFile`" `"$enUsFile`"" 2>&1 | Out-Null
+                if (Test-Path $enUsFile) { $success = $true; break }
+            } catch {}
+        }
         if ($i -lt 10) {
             Write-Host "  Retry $i/10..." -ForegroundColor DarkGray
             Start-Sleep -Seconds 3
+            # Re-acquire permission each retry
+            cmd /c "icacls `"$enUsFile`" /grant Administrators:F >nul 2>&1"
         }
     }
 }
