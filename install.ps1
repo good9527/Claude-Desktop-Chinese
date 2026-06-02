@@ -121,18 +121,17 @@ Write-Host "  Replaced $count / $($enData.PSObject.Properties.Count) strings" -F
 $tempFile = Join-Path $env:TEMP "claude-zh-patch.json"
 $merged | ConvertTo-Json -Depth 10 -Compress | Set-Content $tempFile -Encoding UTF8
 
-# Take ownership and grant write permission (required for WindowsApps)
+# Take ownership of directory (allows creating new files inside)
 Write-Host "  Granting write permission..." -ForegroundColor Gray
 $resDir = Split-Path $enUsFile -Parent
-$takeOwn = "takeown /f `"$resDir`" /a >nul 2>&1"
-$icaclsCmd = "icacls `"$resDir`" /grant Administrators:F /t >nul 2>&1"
-cmd /c $takeOwn
-cmd /c $icaclsCmd
+cmd /c "takeown /f `"$resDir`" /a >nul 2>&1"
+cmd /c "icacls `"$resDir`" /grant Administrators:F /t >nul 2>&1"
 
-# Try multiple times with retry
+# Strategy: file itself has locked ACL, so delete it then write fresh copy
 $success = $false
 for ($i = 1; $i -le 10; $i++) {
     try {
+        Remove-Item $enUsFile -Force -ErrorAction SilentlyContinue
         [IO.File]::Copy($tempFile, $enUsFile, $true)
         $success = $true
         break
