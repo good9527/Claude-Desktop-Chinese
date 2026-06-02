@@ -121,8 +121,33 @@ Write-Host "  Replaced $count / $($enData.PSObject.Properties.Count) strings" -F
 $tempFile = Join-Path $env:TEMP "claude-zh-patch.json"
 $merged | ConvertTo-Json -Depth 10 -Compress | Set-Content $tempFile -Encoding UTF8
 
-[IO.File]::Copy($tempFile, $enUsFile, $true)
+# Take ownership and grant write permission (required for WindowsApps)
+Write-Host "  Granting write permission..." -ForegroundColor Gray
+$resDir = Split-Path $enUsFile -Parent
+& takeown /f $resDir /a 2>&1 | Out-Null
+& icacls $resDir /grant "Administrators:F" /t 2>&1 | Out-Null
+
+# Try multiple times with retry
+$success = $false
+for ($i = 1; $i -le 10; $i++) {
+    try {
+        [IO.File]::Copy($tempFile, $enUsFile, $true)
+        $success = $true
+        break
+    } catch {
+        if ($i -lt 10) {
+            Write-Host "  Retry $i/10..." -ForegroundColor DarkGray
+            Start-Sleep -Seconds 3
+        }
+    }
+}
 Remove-Item $tempFile -ErrorAction SilentlyContinue
+
+if (-not $success) {
+    Write-Host "  ERROR: Failed to write after 10 attempts." -ForegroundColor Red
+    Read-Host "Press Enter to exit"
+    exit 1
+}
 Write-Host "  Patch applied!" -ForegroundColor Green
 
 # --- Step 5: Start Claude (detached) ---
