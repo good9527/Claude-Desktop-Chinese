@@ -1,6 +1,7 @@
 # ============================================================
 #  Claude Desktop Chinese Language Patch Installer
 #  Supports: online (iwr | iex) and local (double-click .bat)
+#  NOTE: Must run from an Administrator PowerShell window.
 # ============================================================
 
 $ErrorActionPreference = "Stop"
@@ -11,36 +12,6 @@ Write-Host "  Claude Desktop Chinese Language Patch" -ForegroundColor Cyan
 Write-Host "  Claude 桌面版中文汉化补丁" -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host ""
-
-# --- Auto-elevate to admin if needed ---
-$isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-if (-not $isAdmin) {
-    Write-Host "  需要管理员权限写入 Claude 目录，正在下载并提权..." -ForegroundColor Yellow
-    Write-Host "  请在弹出的 UAC 窗口点击'是'" -ForegroundColor Cyan
-    # Download script to temp file (MyInvocation.ScriptBlock is null in iex context)
-    $tempScript = Join-Path $env:TEMP "claude_zh_install.ps1"
-    try {
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-        Invoke-WebRequest -Uri "https://raw.githubusercontent.com/good9527/Claude-Desktop-Chinese/main/install.ps1" -OutFile $tempScript -UseBasicParsing
-    } catch {
-        # Fallback: try using ScriptBlock if available
-        if ($MyInvocation.MyCommand.ScriptBlock) {
-            [IO.File]::WriteAllText($tempScript, $MyInvocation.MyCommand.ScriptBlock.ToString(), [Text.Encoding]::UTF8)
-        } else {
-            Write-Host "  [ERROR] 无法下载脚本，请手动以管理员身份运行" -ForegroundColor Red
-            Read-Host "Press Enter to exit"
-            exit 1
-        }
-    }
-    try {
-        $proc = Start-Process -FilePath "powershell.exe" -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$tempScript`"" -Verb RunAs -PassThru
-        $proc.WaitForExit()
-    } catch {
-        Write-Host "  [ERROR] 提权失败: $($_.Exception.Message)" -ForegroundColor Red
-    }
-    Remove-Item $tempScript -Force -ErrorAction SilentlyContinue
-    exit 0
-}
 
 # --- Step 1: Detect Claude ---
 Write-Host "[1/5] Detecting Claude..." -ForegroundColor Yellow
@@ -97,15 +68,7 @@ Write-Host "  Loaded $($zhData.PSObject.Properties.Count) translations." -Foregr
 Write-Host ""
 Write-Host "[3/5] Closing Claude..." -ForegroundColor Yellow
 Get-Process -Name 'Claude' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-# Wait until Claude is fully gone (max 15 seconds)
-for ($w = 1; $w -le 15; $w++) {
-    if (-not (Get-Process -Name 'Claude' -ErrorAction SilentlyContinue)) {
-        break
-    }
-    Start-Sleep -Seconds 1
-}
-# Extra settle time for file handles to release
-Start-Sleep -Seconds 2
+Start-Sleep -Seconds 3
 Write-Host "  Done." -ForegroundColor Green
 
 # --- Step 4: Backup & merge ---
@@ -137,51 +100,30 @@ foreach ($prop in $enData.PSObject.Properties) {
 }
 Write-Host "  Replaced $count / $($enData.PSObject.Properties.Count) strings" -ForegroundColor Green
 
-# Write merged JSON to temp file
+# Write to temp then copy (bypass WindowsApps protection)
 $tempFile = Join-Path $env:TEMP "claude-zh-patch.json"
 $merged | ConvertTo-Json -Depth 10 -Compress | Set-Content $tempFile -Encoding UTF8
 
-# Ensure we have write permission to the target file
+# Ensure write permission
 $resDir = Split-Path $enUsFile -Parent
-Write-Host "  Acquiring permissions..." -ForegroundColor Gray
 & takeown /f $resDir /a 2>&1 | Out-Null
 & icacls $resDir /grant "Administrators:F" /t 2>&1 | Out-Null
-& icacls $enUsFile /grant "Administrators:F" 2>&1 | Out-Null
 
-# Try multiple write methods with retries (10 attempts, 3 seconds apart)
+# Try multiple times with retry
 $success = $false
 for ($i = 1; $i -le 10; $i++) {
     try {
-        # Method 1: Copy-Item (most reliable for WindowsApps)
-        Copy-Item -Path $tempFile -Destination $enUsFile -Force -ErrorAction Stop
+        [IO.File]::Copy($tempFile, $enUsFile, $true)
         $success = $true
         break
     } catch {
-        try {
-            # Method 2: .NET Copy
-            [IO.File]::Copy($tempFile, $enUsFile, $true)
-            $success = $true
-            break
-        } catch {
-            try {
-                # Method 3: cmd copy
-                cmd /c "copy /Y `"$tempFile`" `"$enUsFile`"" 2>&1 | Out-Null
-                if (Test-Path $enUsFile) { $success = $true; break }
-            } catch {}
-        }
-        if ($i -lt 10) {
-            Write-Host "  Retry $i/10..." -ForegroundColor DarkGray
-            Start-Sleep -Seconds 3
-            # Re-acquire permission each retry
-            cmd /c "icacls `"$enUsFile`" /grant Administrators:F >nul 2>&1"
-        }
+        Start-Sleep -Seconds 3
     }
 }
 Remove-Item $tempFile -ErrorAction SilentlyContinue
 
 if (-not $success) {
-    Write-Host "  ERROR: Failed to write after 10 attempts." -ForegroundColor Red
-    Write-Host "  请关闭所有 Claude 相关窗口后重试。" -ForegroundColor Yellow
+    Write-Host "  ERROR: Failed to write. File may be locked." -ForegroundColor Red
     Read-Host "Press Enter to exit"
     exit 1
 }
