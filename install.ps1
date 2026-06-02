@@ -12,15 +12,24 @@ Write-Host "  Claude 桌面版中文汉化补丁" -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host ""
 
-# --- Admin check (required for WindowsApps directory write) ---
+# --- Auto-elevate to admin if needed ---
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
-    Write-Host "  [ERROR] Need admin to write to WindowsApps directory." -ForegroundColor Red
-    Write-Host "  以管理员身份运行 PowerShell 后再执行此命令。" -ForegroundColor Yellow
-    Write-Host ""
-    Write-Host "  右键开始菜单 -> 终端(管理员) -> 粘贴命令" -ForegroundColor Cyan
-    Read-Host "Press Enter to exit"
-    exit 1
+    Write-Host "  需要管理员权限写入 Claude 目录，正在请求提权..." -ForegroundColor Yellow
+    Write-Host "  请在弹出的 UAC 窗口点击'是'" -ForegroundColor Cyan
+    # Save script to temp file and relaunch as admin
+    $scriptContent = $MyInvocation.MyCommand.ScriptBlock.ToString()
+    $tempScript = Join-Path $env:TEMP "claude_zh_install.ps1"
+    [IO.File]::WriteAllText($tempScript, $scriptContent, [Text.Encoding]::UTF8)
+    try {
+        $proc = Start-Process -FilePath "powershell.exe" -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$tempScript`" -Elevated" -Verb RunAs -PassThru
+        $proc.WaitForExit()
+    } catch {
+        Write-Host "  [ERROR] 提权失败: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "  请手动以管理员身份运行 PowerShell" -ForegroundColor Yellow
+    }
+    Remove-Item $tempScript -Force -ErrorAction SilentlyContinue
+    exit 0
 }
 
 # --- Step 1: Detect Claude ---
