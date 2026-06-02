@@ -5,6 +5,24 @@
 
 $ErrorActionPreference = "Stop"
 
+# --- Auto-elevate to admin if needed (required for WindowsApps write) ---
+$isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+if (-not $isAdmin) {
+    Write-Host "  需要管理员权限，正在请求提权..." -ForegroundColor Yellow
+    Write-Host "  请在弹出的 UAC 窗口点击'是'" -ForegroundColor Cyan
+    Write-Host ""
+    $tempScript = Join-Path $env:TEMP "claude_zh_install.ps1"
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    Invoke-WebRequest -Uri "https://raw.githubusercontent.com/good9527/Claude-Desktop-Chinese/main/install.ps1" -OutFile $tempScript -UseBasicParsing
+    try {
+        Start-Process -FilePath "powershell.exe" -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$tempScript`"" -Verb RunAs -Wait
+    } catch {
+        Write-Host "  [ERROR] 提权失败，请手动右键管理员运行。" -ForegroundColor Red
+    }
+    Remove-Item $tempScript -Force -ErrorAction SilentlyContinue
+    exit 0
+}
+
 Write-Host ""
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host "  Claude Desktop Chinese Language Patch" -ForegroundColor Cyan
@@ -123,4 +141,5 @@ Write-Host "  Done! Claude is now in Chinese." -ForegroundColor Cyan
 Write-Host "  To restore English, run uninstall.ps1" -ForegroundColor Gray
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host ""
-Read-Host "Press Enter to exit"
+Write-Host "  窗口将在5秒后自动关闭..." -ForegroundColor Gray
+Start-Sleep -Seconds 5
