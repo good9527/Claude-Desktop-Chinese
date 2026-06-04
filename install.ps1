@@ -9,11 +9,26 @@ $ErrorActionPreference = "Stop"
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
     Write-Host "  Requesting admin (click Yes on UAC prompt)..." -ForegroundColor Yellow
+
+    # Running from a local file (double-click install.bat or powershell -File install.ps1)
+    if ($PSCommandPath) {
+        $proc = Start-Process -FilePath "powershell.exe" -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs -PassThru
+        $proc.WaitForExit()
+        exit 0
+    }
+
+    # Running via iwr | iex (no local file) — download script from GitHub
     Write-Host "  A new admin window will open. Check it for results." -ForegroundColor Gray
     Write-Host ""
     $tempScript = Join-Path $env:TEMP "claude_zh_install.ps1"
-    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    Invoke-WebRequest -Uri "https://raw.githubusercontent.com/good9527/Claude-Desktop-Chinese/main/install.ps1" -OutFile $tempScript -UseBasicParsing
+    try {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        Invoke-WebRequest -Uri "https://raw.githubusercontent.com/good9527/Claude-Desktop-Chinese/main/install.ps1" -OutFile $tempScript -UseBasicParsing
+    } catch {
+        Write-Host "  [ERROR] Failed to download installer from GitHub." -ForegroundColor Red
+        Write-Host "  Please open an admin terminal and run the command again." -ForegroundColor Yellow
+        exit 1
+    }
     # Add BOM for correct Chinese display in admin window
     $bytes = [IO.File]::ReadAllBytes($tempScript)
     if ($bytes.Length -lt 3 -or $bytes[0] -ne 0xEF -or $bytes[1] -ne 0xBB -or $bytes[2] -ne 0xBF) {
@@ -117,7 +132,7 @@ foreach ($prop in $enData.PSObject.Properties) {
         $merged[$prop.Name] = $prop.Value
     }
 }
-Write-Host "  Replaced $count / $($enData.PSObject.Properties.Count) strings" -ForegroundColor Green
+Write-Host "  Replaced $count / $(@($enData.PSObject.Properties).Count) strings" -ForegroundColor Green
 
 $tempFile = Join-Path $env:TEMP "claude-zh-patch.json"
 $merged | ConvertTo-Json -Depth 10 -Compress | Set-Content $tempFile -Encoding UTF8
