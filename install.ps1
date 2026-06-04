@@ -135,33 +135,34 @@ Write-Host "  Running as: $($currentUser.Name), Admin: $isReallyAdmin" -Foregrou
 
 # Step A: Write merged content as new file (try multiple methods)
 $writeSuccess = $false
+$patchContent = [IO.File]::ReadAllBytes($tempFile)
 try {
-    [IO.File]::Copy($tempFile, $newFile, $true)
+    [IO.File]::WriteAllBytes($newFile, $patchContent)
     if ((Test-Path $newFile) -and (Get-Item $newFile).Length -gt 0) {
         $writeSuccess = $true
     }
 } catch {
-    Write-Host "  [IO.File]::Copy failed, trying cmd copy..." -ForegroundColor DarkGray
+    Write-Host "  WriteAllBytes failed, trying Set-Content..." -ForegroundColor DarkGray
 }
 if (-not $writeSuccess) {
-    # Fallback: cmd copy
-    $r = cmd /c "copy /Y `"$tempFile`" `"$newFile`"" 2>&1
-    if ((Test-Path $newFile) -and (Get-Item $newFile).Length -gt 0) {
-        $writeSuccess = $true
-    } else {
-        Write-Host "  cmd copy also failed: $r" -ForegroundColor DarkGray
-    }
-}
-if (-not $writeSuccess) {
-    # Fallback 2: Set-Content via PS provider
     try {
-        $content = [IO.File]::ReadAllText($tempFile)
-        Set-Content -Path $newFile -Value $content -Force -ErrorAction Stop
+        $text = [IO.File]::ReadAllText($tempFile)
+        Set-Content -Path $newFile -Value $text -Force -ErrorAction Stop
         if ((Test-Path $newFile) -and (Get-Item $newFile).Length -gt 0) {
             $writeSuccess = $true
         }
     } catch {
         Write-Host "  Set-Content also failed: $($_.Exception.Message)" -ForegroundColor DarkGray
+    }
+}
+if (-not $writeSuccess) {
+    try {
+        [IO.File]::Copy($tempFile, $newFile, $true)
+        if ((Test-Path $newFile) -and (Get-Item $newFile).Length -gt 0) {
+            $writeSuccess = $true
+        }
+    } catch {
+        Write-Host "  Copy also failed: $($_.Exception.Message)" -ForegroundColor DarkGray
     }
 }
 
