@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent
-DEFAULT_SOURCE = ROOT / "en-US-957k.json"
+DEFAULT_SOURCE = ROOT / "local" / "en-US.json"
 DEFAULT_CHUNK_DIR = ROOT / "chunks"
 
 

@@ -132,12 +132,16 @@ python scripts/validate.py
 常用翻译维护流程：
 
 ```powershell
-python split_chunks.py --source en-US-957k.json --chunk-dir chunks --chunk-size 500
-python translate3.py --source en-US-957k.json --output zh-CN-ion.json
+New-Item -ItemType Directory -Force local
+# 将你本机 Claude 的 en-US.json 复制到 local\en-US.json；不要提交该文件
+python split_chunks.py --source local\en-US.json --chunk-dir chunks --chunk-size 500
+python translate3.py --source local\en-US.json --output zh-CN-ion.json
 python merge.py --chunk-dir chunks --output zh-CN-ion.json
 Copy-Item zh-CN-ion.json dist\zh-CN.json
 python scripts/validate.py
 ```
+
+仓库不发布 Claude 原始英文语言文件。`local/en-US.json`、`en-US*.json`、`zh-CN-checkpoint.json` 等维护中间文件已被 `.gitignore` 排除。
 
 `translate.py` 依赖 `googletrans`，`translate2.py` 依赖 `deep-translator`，`translate3.py` 使用公共 Google Translate HTTP 端点且支持 checkpoint。翻译服务可能限流，建议先用小批量测试。
 

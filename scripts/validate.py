@@ -13,7 +13,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-REFERENCE_EN = ROOT / "en-US-957k.json"
+REFERENCE_EN = ROOT / "local" / "en-US.json"
 RELEASE_ZH = ROOT / "dist" / "zh-CN.json"
 SOURCE_ZH = ROOT / "zh-CN-ion.json"
 POWERSHELL_SCRIPTS = (ROOT / "install.ps1", ROOT / "uninstall.ps1")
@@ -55,22 +55,11 @@ def has_cjk(value: object) -> bool:
 
 
 def validate_json_assets() -> None:
-    en_data = load_json(REFERENCE_EN)
     zh_data = load_json(RELEASE_ZH)
     source_zh_data = load_json(SOURCE_ZH)
 
     if zh_data != source_zh_data:
         fail("dist/zh-CN.json must match zh-CN-ion.json")
-
-    en_keys = set(en_data)
-    zh_keys = set(zh_data)
-    matched_keys = en_keys & zh_keys
-    extra_keys = zh_keys - en_keys
-    missing_keys = en_keys - zh_keys
-
-    coverage = len(matched_keys) / len(en_keys)
-    if coverage < MIN_COVERAGE:
-        fail(f"translation coverage is {coverage:.2%}, expected at least {MIN_COVERAGE:.0%}")
 
     chinese_values = sum(1 for value in zh_data.values() if has_cjk(value))
     chinese_ratio = chinese_values / len(zh_data)
@@ -83,12 +72,27 @@ def validate_json_assets() -> None:
         fail(f"translation file contains empty string values: {sample}")
 
     print("[OK] JSON assets")
-    print(f"     en-US reference keys: {len(en_data)}")
     print(f"     zh-CN release keys:   {len(zh_data)}")
-    print(f"     matched keys:         {len(matched_keys)} ({coverage:.2%})")
-    print(f"     missing reference:    {len(missing_keys)}")
-    print(f"     extra release keys:   {len(extra_keys)}")
     print(f"     values with Chinese:  {chinese_values} ({chinese_ratio:.2%})")
+
+    if REFERENCE_EN.exists():
+        en_data = load_json(REFERENCE_EN)
+        en_keys = set(en_data)
+        zh_keys = set(zh_data)
+        matched_keys = en_keys & zh_keys
+        extra_keys = zh_keys - en_keys
+        missing_keys = en_keys - zh_keys
+
+        coverage = len(matched_keys) / len(en_keys)
+        if coverage < MIN_COVERAGE:
+            fail(f"translation coverage is {coverage:.2%}, expected at least {MIN_COVERAGE:.0%}")
+
+        print(f"     en-US reference keys: {len(en_data)}")
+        print(f"     matched keys:         {len(matched_keys)} ({coverage:.2%})")
+        print(f"     missing reference:    {len(missing_keys)}")
+        print(f"     extra release keys:   {len(extra_keys)}")
+    else:
+        print("     en-US reference:      skipped (place a local copy at local/en-US.json for coverage checks)")
 
 
 def validate_readme_stats() -> None:

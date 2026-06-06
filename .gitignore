@@ -1,5 +1,8 @@
 # Generated files
 en-US-hacked.json
+en-US*.json
+zh-CN-checkpoint.json
+zh-CN.json
 debug.log
 *.log
 
@@ -23,3 +26,4 @@ chunks/
 # Local environment files
 .env
 .env.*
+local/
