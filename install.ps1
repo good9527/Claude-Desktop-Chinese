@@ -5,227 +5,338 @@
 
 $ErrorActionPreference = "Stop"
 
-# --- Auto-elevate to admin if needed (required for WindowsApps write) ---
-$isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-if (-not $isAdmin) {
-    Write-Host "  Requesting admin (click Yes on UAC prompt)..." -ForegroundColor Yellow
+$RepositoryRawBase = "https://raw.githubusercontent.com/good9527/Claude-Desktop-Chinese/main"
+$PatchDir = Join-Path $env:LOCALAPPDATA "Claude-Chinese-Patch"
+$BackupFile = Join-Path $PatchDir "en-US-original.json"
+$MetadataFile = Join-Path $PatchDir "metadata.json"
+$DictionaryUrl = "$RepositoryRawBase/dist/zh-CN.json"
 
-    # Running from a local file (double-click install.bat or powershell -File install.ps1)
-    if ($PSCommandPath) {
-        $proc = Start-Process -FilePath "powershell.exe" -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs -PassThru
-        $proc.WaitForExit()
-        exit 0
+function Write-Step {
+    param(
+        [Parameter(Mandatory = $true)][string]$Message,
+        [string]$Color = "Yellow"
+    )
+    Write-Host ""
+    Write-Host $Message -ForegroundColor $Color
+}
+
+function Wait-ForExit {
+    param([Parameter(Mandatory = $true)][string]$ProcessName)
+
+    Get-Process -Name $ProcessName -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+    for ($i = 1; $i -le 10; $i++) {
+        Start-Sleep -Milliseconds 500
+        if (-not (Get-Process -Name $ProcessName -ErrorAction SilentlyContinue)) {
+            return
+        }
+    }
+    throw "$ProcessName is still running. Please close it and run this script again."
+}
+
+function Test-IsAdmin {
+    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+    $principal = [Security.Principal.WindowsPrincipal]$identity
+    return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+}
+
+function Add-Utf8Bom {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    $bytes = [IO.File]::ReadAllBytes($Path)
+    if ($bytes.Length -lt 3 -or $bytes[0] -ne 0xEF -or $bytes[1] -ne 0xBB -or $bytes[2] -ne 0xBF) {
+        [IO.File]::WriteAllBytes($Path, [byte[]]@(0xEF, 0xBB, 0xBF) + $bytes)
+    }
+}
+
+function Start-ElevatedSelf {
+    if (Test-IsAdmin) {
+        return
     }
 
-    # Running via iwr | iex (no local file) — download script from GitHub
-    Write-Host "  A new admin window will open. Check it for results." -ForegroundColor Gray
-    Write-Host ""
+    Write-Host "  Requesting administrator permission..." -ForegroundColor Yellow
+    Write-Host "  A new administrator PowerShell window will open." -ForegroundColor Gray
+
+    if ($PSCommandPath) {
+        $argumentList = "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
+        $proc = Start-Process -FilePath "powershell.exe" -ArgumentList $argumentList -Verb RunAs -PassThru
+        $proc.WaitForExit()
+        exit $proc.ExitCode
+    }
+
     $tempScript = Join-Path $env:TEMP "claude_zh_install.ps1"
     try {
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-        Invoke-WebRequest -Uri "https://raw.githubusercontent.com/good9527/Claude-Desktop-Chinese/main/install.ps1" -OutFile $tempScript -UseBasicParsing
-    } catch {
-        Write-Host "  [ERROR] Failed to download installer from GitHub." -ForegroundColor Red
-        Write-Host "  Please open an admin terminal and run the command again." -ForegroundColor Yellow
-        exit 1
-    }
-    # Add BOM for correct Chinese display in admin window
-    $bytes = [IO.File]::ReadAllBytes($tempScript)
-    if ($bytes.Length -lt 3 -or $bytes[0] -ne 0xEF -or $bytes[1] -ne 0xBB -or $bytes[2] -ne 0xBF) {
-        [IO.File]::WriteAllBytes($tempScript, [byte[]]@(0xEF, 0xBB, 0xBF) + $bytes)
-    }
-    try {
-        $proc = Start-Process -FilePath "powershell.exe" -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$tempScript`"" -Verb RunAs -PassThru
+        Invoke-WebRequest -Uri "$RepositoryRawBase/install.ps1" -OutFile $tempScript -UseBasicParsing
+        Add-Utf8Bom -Path $tempScript
+        $argumentList = "-NoProfile -ExecutionPolicy Bypass -File `"$tempScript`""
+        $proc = Start-Process -FilePath "powershell.exe" -ArgumentList $argumentList -Verb RunAs -PassThru
         $proc.WaitForExit()
+        exit $proc.ExitCode
     } catch {
-        Write-Host "  [ERROR] UAC cancelled or failed." -ForegroundColor Red
+        Write-Host "  ERROR: Failed to start elevated installer: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "  Please open Windows Terminal as administrator and run the install command again." -ForegroundColor Yellow
+        exit 1
+    } finally {
+        Remove-Item $tempScript -Force -ErrorAction SilentlyContinue
     }
-    Remove-Item $tempScript -Force -ErrorAction SilentlyContinue
-    exit 0
 }
+
+function Get-ClaudePackage {
+    $packages = @(Get-AppxPackage -Name "Claude" -ErrorAction SilentlyContinue)
+    if ($packages.Count -eq 0) {
+        $packages = @(Get-AppxPackage -ErrorAction SilentlyContinue | Where-Object {
+            $_.Name -eq "Claude" -or $_.Name -like "*Claude*"
+        })
+    }
+    if ($packages.Count -eq 0) {
+        throw "Claude Desktop was not found. Please install Claude from the Microsoft Store first."
+    }
+    return $packages | Sort-Object Version -Descending | Select-Object -First 1
+}
+
+function Get-I18nFile {
+    param([Parameter(Mandatory = $true)]$Package)
+
+    $candidates = @(
+        (Join-Path $Package.InstallLocation "app\resources\ion-dist\i18n\en-US.json")
+    )
+
+    foreach ($candidate in $candidates) {
+        if (Test-Path -LiteralPath $candidate) {
+            return $candidate
+        }
+    }
+
+    $found = Get-ChildItem -LiteralPath $Package.InstallLocation -Filter "en-US.json" -Recurse -ErrorAction SilentlyContinue |
+        Where-Object { $_.FullName -match "\\i18n\\en-US\.json$" } |
+        Select-Object -First 1
+
+    if (-not $found) {
+        throw "Could not find Claude's en-US.json under: $($Package.InstallLocation)"
+    }
+    return $found.FullName
+}
+
+function Get-DictionaryFile {
+    if ($PSScriptRoot) {
+        $localCandidates = @(
+            (Join-Path $PSScriptRoot "dist\zh-CN.json"),
+            (Join-Path $PSScriptRoot "zh-CN-ion.json")
+        )
+        foreach ($candidate in $localCandidates) {
+            if (Test-Path -LiteralPath $candidate) {
+                Write-Host "  Using local dictionary: $candidate" -ForegroundColor Gray
+                return $candidate
+            }
+        }
+    }
+
+    $downloadPath = Join-Path $env:TEMP "claude-zh-dict.json"
+    Write-Host "  Downloading dictionary from GitHub..." -ForegroundColor Gray
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    Invoke-WebRequest -Uri $DictionaryUrl -OutFile $downloadPath -UseBasicParsing
+    return $downloadPath
+}
+
+function Read-JsonObject {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    if (-not (Test-Path -LiteralPath $Path)) {
+        throw "File not found: $Path"
+    }
+
+    $json = [IO.File]::ReadAllText($Path, [Text.Encoding]::UTF8)
+    return $json | ConvertFrom-Json
+}
+
+function ConvertTo-OrderedHashtable {
+    param([Parameter(Mandatory = $true)]$Object)
+
+    $ordered = [ordered]@{}
+    foreach ($prop in $Object.PSObject.Properties) {
+        $ordered[$prop.Name] = $prop.Value
+    }
+    return $ordered
+}
+
+function Write-JsonUtf8 {
+    param(
+        [Parameter(Mandatory = $true)]$Object,
+        [Parameter(Mandatory = $true)][string]$Path
+    )
+
+    $json = $Object | ConvertTo-Json -Depth 50 -Compress
+    [IO.File]::WriteAllText($Path, $json, [Text.Encoding]::UTF8)
+}
+
+function Copy-WithRetry {
+    param(
+        [Parameter(Mandatory = $true)][string]$Source,
+        [Parameter(Mandatory = $true)][string]$Destination
+    )
+
+    for ($i = 1; $i -le 5; $i++) {
+        try {
+            [IO.File]::Copy($Source, $Destination, $true)
+            return
+        } catch {
+            if ($i -eq 5) {
+                throw
+            }
+            Start-Sleep -Seconds 2
+        }
+    }
+}
+
+function Replace-ProtectedFile {
+    param(
+        [Parameter(Mandatory = $true)][string]$Source,
+        [Parameter(Mandatory = $true)][string]$Destination
+    )
+
+    try {
+        Copy-WithRetry -Source $Source -Destination $Destination
+        return
+    } catch {
+        Write-Host "  Direct write failed, trying replace strategy..." -ForegroundColor DarkGray
+    }
+
+    $destinationDir = Split-Path $Destination -Parent
+    $stagedFile = Join-Path $destinationDir ("zh-CN-patched-{0}.json" -f ([Guid]::NewGuid().ToString("N")))
+    $moved = $false
+
+    try {
+        Copy-WithRetry -Source $Source -Destination $stagedFile
+        Remove-Item -LiteralPath $Destination -Force -ErrorAction Stop
+        if (Test-Path -LiteralPath $Destination) {
+            throw "Could not delete original file."
+        }
+
+        try {
+            Move-Item -LiteralPath $stagedFile -Destination $Destination -Force -ErrorAction Stop
+            $moved = $true
+        } catch {
+            throw "Could not move staged file into place. Staged file kept at: $stagedFile. $($_.Exception.Message)"
+        }
+    } finally {
+        if ($moved -and (Test-Path -LiteralPath $stagedFile)) {
+            Remove-Item -LiteralPath $stagedFile -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
+
+function Save-Metadata {
+    param(
+        [Parameter(Mandatory = $true)]$Package,
+        [Parameter(Mandatory = $true)][string]$TargetFile,
+        [Parameter(Mandatory = $true)][int]$SourceKeyCount,
+        [Parameter(Mandatory = $true)][int]$TranslatedKeyCount,
+        [Parameter(Mandatory = $true)][int]$ReplacedCount
+    )
+
+    $metadata = [ordered]@{
+        installedAt = (Get-Date).ToString("o")
+        claudePackageName = $Package.Name
+        claudeVersion = $Package.Version.ToString()
+        installLocation = $Package.InstallLocation
+        targetFile = $TargetFile
+        backupFile = $BackupFile
+        sourceKeyCount = $SourceKeyCount
+        translatedKeyCount = $TranslatedKeyCount
+        replacedCount = $ReplacedCount
+    }
+    Write-JsonUtf8 -Object $metadata -Path $MetadataFile
+}
+
+Start-ElevatedSelf
 
 Write-Host ""
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host "  Claude Desktop Chinese Language Patch" -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host ""
 
-# --- Config ---
-$patchDir = Join-Path $env:LOCALAPPDATA "Claude-Chinese-Patch"
-$backupFile = Join-Path $patchDir "en-US-original.json"
-
-# --- Step 1: Detect Claude installation ---
-Write-Host "[1/5] Detecting Claude installation..." -ForegroundColor Yellow
-$claude = Get-AppxPackage -Name 'Claude' -ErrorAction SilentlyContinue
-if (-not $claude) {
-    Write-Host "  ERROR: Claude Desktop not found!" -ForegroundColor Red
-    Write-Host "  Please install Claude from the Microsoft Store first." -ForegroundColor Red
-    Read-Host "Press Enter to exit"
-    exit 1
-}
-$installDir = $claude.InstallLocation
-$i18nDir = Join-Path $installDir "app\resources\ion-dist\i18n"
-$enUsFile = Join-Path $i18nDir "en-US.json"
-Write-Host "  Found: Claude v$($claude.Version)" -ForegroundColor Green
-
-# --- Step 2: Close Claude ---
-Write-Host ""
-Write-Host "[2/5] Closing Claude..." -ForegroundColor Yellow
-Get-Process -Name 'Claude' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-Start-Sleep -Seconds 3
-Write-Host "  Done." -ForegroundColor Green
-
-# --- Step 3: Backup original en-US.json ---
-Write-Host ""
-Write-Host "[3/5] Backing up original en-US.json..." -ForegroundColor Yellow
-if (-not (Test-Path $patchDir)) {
-    New-Item -ItemType Directory -Path $patchDir -Force | Out-Null
-}
-if (-not (Test-Path $backupFile)) {
-    [IO.File]::Copy($enUsFile, $backupFile, $true)
-    Write-Host "  Backup saved to: $backupFile" -ForegroundColor Green
-} else {
-    Write-Host "  Backup already exists, keeping it." -ForegroundColor Gray
-}
-
-# --- Step 4: Merge translations ---
-Write-Host ""
-Write-Host "[4/5] Applying Chinese translations..." -ForegroundColor Yellow
-
-$dictFile = $null
-if ($PSScriptRoot) {
-    $localDict = Join-Path $PSScriptRoot "dist\zh-CN.json"
-    if (Test-Path $localDict) {
-        $dictFile = $localDict
-    }
-}
-if (-not $dictFile) {
-    Write-Host "  Downloading zh-CN.json from GitHub..." -ForegroundColor Gray
-    $dictUrl = "https://raw.githubusercontent.com/good9527/Claude-Desktop-Chinese/main/dist/zh-CN.json"
-    $dictFile = Join-Path $env:TEMP "claude-zh-dict.json"
-    try {
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-        Invoke-WebRequest -Uri $dictUrl -OutFile $dictFile -UseBasicParsing
-        Write-Host "  Downloaded." -ForegroundColor Green
-    } catch {
-        Write-Host "  ERROR: Failed to download - $_" -ForegroundColor Red
-        Read-Host "Press Enter to exit"
-        exit 1
-    }
-}
-if (-not (Test-Path $dictFile)) {
-    Write-Host "  ERROR: zh-CN.json not found" -ForegroundColor Red
-    Read-Host "Press Enter to exit"
-    exit 1
-}
-
-$enData = [IO.File]::ReadAllText($enUsFile) | ConvertFrom-Json
-$zhData = [IO.File]::ReadAllText($dictFile) | ConvertFrom-Json
-
-$merged = @{}
-$count = 0
-foreach ($prop in $enData.PSObject.Properties) {
-    if ($zhData.PSObject.Properties[$prop.Name]) {
-        $merged[$prop.Name] = $zhData.PSObject.Properties[$prop.Name].Value
-        $count++
-    } else {
-        $merged[$prop.Name] = $prop.Value
-    }
-}
-Write-Host "  Replaced $count / $(@($enData.PSObject.Properties).Count) strings" -ForegroundColor Green
-
-$tempFile = Join-Path $env:TEMP "claude-zh-patch.json"
-$merged | ConvertTo-Json -Depth 10 -Compress | Set-Content $tempFile -Encoding UTF8
-
-# Strategy: write new file -> cmd delete old -> rename
-# (MSIX protection prevents direct overwrite, but new files + cmd delete work)
-$resDir = Split-Path $enUsFile -Parent
-$newFile = Join-Path $resDir "zh-CN-patched.json"
-$success = $false
-
-# Log admin status for debugging
-$currentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
-$isReallyAdmin = ([Security.Principal.WindowsPrincipal]$currentUser).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-Write-Host "  Running as: $($currentUser.Name), Admin: $isReallyAdmin" -ForegroundColor Gray
-
-# Step A: Write merged content as new file (try multiple methods)
-$writeSuccess = $false
-$patchContent = [IO.File]::ReadAllBytes($tempFile)
 try {
-    [IO.File]::WriteAllBytes($newFile, $patchContent)
-    if ((Test-Path $newFile) -and (Get-Item $newFile).Length -gt 0) {
-        $writeSuccess = $true
-    }
-} catch {
-    Write-Host "  WriteAllBytes failed, trying Set-Content..." -ForegroundColor DarkGray
-}
-if (-not $writeSuccess) {
-    try {
-        $text = [IO.File]::ReadAllText($tempFile)
-        Set-Content -Path $newFile -Value $text -Force -ErrorAction Stop
-        if ((Test-Path $newFile) -and (Get-Item $newFile).Length -gt 0) {
-            $writeSuccess = $true
-        }
-    } catch {
-        Write-Host "  Set-Content also failed: $($_.Exception.Message)" -ForegroundColor DarkGray
-    }
-}
-if (-not $writeSuccess) {
-    try {
-        [IO.File]::Copy($tempFile, $newFile, $true)
-        if ((Test-Path $newFile) -and (Get-Item $newFile).Length -gt 0) {
-            $writeSuccess = $true
-        }
-    } catch {
-        Write-Host "  Copy also failed: $($_.Exception.Message)" -ForegroundColor DarkGray
-    }
-}
+    Write-Step "[1/5] Detecting Claude installation..."
+    $claude = Get-ClaudePackage
+    $enUsFile = Get-I18nFile -Package $claude
+    Write-Host "  Found: Claude v$($claude.Version)" -ForegroundColor Green
+    Write-Host "  Target: $enUsFile" -ForegroundColor Gray
 
-if ($writeSuccess) {
-    Write-Host "  New file written: $((Get-Item $newFile).Length) bytes" -ForegroundColor Gray
+    Write-Step "[2/5] Closing Claude..."
+    Wait-ForExit -ProcessName "Claude"
+    Write-Host "  Done." -ForegroundColor Green
 
-    # Step B: Delete original via cmd
-    cmd /c "del /f `"$enUsFile`"" 2>&1 | Out-Null
-    if (-not (Test-Path $enUsFile)) {
-        # Step C: Rename new file to original name
-        try {
-            Rename-Item $newFile "en-US.json" -ErrorAction Stop
-            $success = $true
-        } catch {
-            cmd /c "ren `"$newFile`" en-US.json" 2>&1 | Out-Null
-            if (Test-Path $enUsFile) { $success = $true }
-        }
+    Write-Step "[3/5] Backing up original en-US.json..."
+    New-Item -ItemType Directory -Path $PatchDir -Force | Out-Null
+    if (-not (Test-Path -LiteralPath $BackupFile)) {
+        Copy-WithRetry -Source $enUsFile -Destination $BackupFile
+        Write-Host "  Backup saved to: $BackupFile" -ForegroundColor Green
     } else {
-        Write-Host "  Could not delete original file." -ForegroundColor DarkGray
+        Write-Host "  Backup already exists, keeping it." -ForegroundColor Gray
     }
-}
 
-# Cleanup on failure
-if (-not $success) {
-    if (Test-Path $newFile) { Remove-Item $newFile -Force -ErrorAction SilentlyContinue }
-}
-Remove-Item $tempFile -ErrorAction SilentlyContinue
+    Write-Step "[4/5] Applying Chinese translations..."
+    $dictFile = Get-DictionaryFile
+    $enData = Read-JsonObject -Path $enUsFile
+    $zhData = Read-JsonObject -Path $dictFile
 
-if (-not $success) {
-    Write-Host "  ERROR: Failed to apply patch." -ForegroundColor Red
+    $zhMap = ConvertTo-OrderedHashtable -Object $zhData
+    $merged = [ordered]@{}
+    $replacedCount = 0
+
+    foreach ($prop in $enData.PSObject.Properties) {
+        if ($zhMap.Contains($prop.Name)) {
+            $merged[$prop.Name] = $zhMap[$prop.Name]
+            $replacedCount++
+        } else {
+            $merged[$prop.Name] = $prop.Value
+        }
+    }
+
+    $sourceKeyCount = @($enData.PSObject.Properties).Count
+    $translatedKeyCount = @($zhData.PSObject.Properties).Count
+    Write-Host "  Replaced $replacedCount / $sourceKeyCount strings" -ForegroundColor Green
+
+    $tempFile = Join-Path $env:TEMP ("claude-zh-patch-{0}.json" -f ([Guid]::NewGuid().ToString("N")))
+    Write-JsonUtf8 -Object $merged -Path $tempFile
+
+    try {
+        Replace-ProtectedFile -Source $tempFile -Destination $enUsFile
+    } finally {
+        Remove-Item -LiteralPath $tempFile -Force -ErrorAction SilentlyContinue
+    }
+
+    $verifyData = Read-JsonObject -Path $enUsFile
+    $verifyCount = @($verifyData.PSObject.Properties).Count
+    if ($verifyCount -ne $sourceKeyCount) {
+        throw "Verification failed: expected $sourceKeyCount keys, found $verifyCount."
+    }
+
+    Save-Metadata -Package $claude -TargetFile $enUsFile -SourceKeyCount $sourceKeyCount -TranslatedKeyCount $translatedKeyCount -ReplacedCount $replacedCount
+    Write-Host "  Patch applied and verified." -ForegroundColor Green
+
+    Write-Step "[5/5] Starting Claude..."
+    $claudeExe = Join-Path $claude.InstallLocation "app\Claude.exe"
+    if (Test-Path -LiteralPath $claudeExe) {
+        Start-Process -FilePath $claudeExe -ErrorAction SilentlyContinue
+        Write-Host "  Claude started." -ForegroundColor Green
+    } else {
+        Write-Host "  Claude.exe was not found; please start Claude manually." -ForegroundColor Yellow
+    }
+
+    Write-Host ""
+    Write-Host "==========================================" -ForegroundColor Cyan
+    Write-Host "  Done! Claude is now in Chinese." -ForegroundColor Cyan
+    Write-Host "  To restore English, run uninstall.ps1" -ForegroundColor Gray
+    Write-Host "==========================================" -ForegroundColor Cyan
+    Write-Host ""
+} catch {
+    Write-Host ""
+    Write-Host "ERROR: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "Backup location: $BackupFile" -ForegroundColor Yellow
+    Write-Host ""
     Read-Host "Press Enter to exit"
     exit 1
 }
-Write-Host "  Patch applied!" -ForegroundColor Green
 
-# --- Step 5: Start Claude (detached) ---
-Write-Host ""
-Write-Host "[5/5] Starting Claude..." -ForegroundColor Yellow
-$claudeExe = Join-Path $installDir "app\Claude.exe"
-if (Test-Path $claudeExe) {
-    Start-Process "cmd.exe" -ArgumentList "/c start `"`" `"$claudeExe`"" -WindowStyle Hidden -ErrorAction SilentlyContinue
-    Write-Host "  Claude started (detached)." -ForegroundColor Green
-}
-
-Write-Host ""
-Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host "  Done! Claude is now in Chinese." -ForegroundColor Cyan
-Write-Host "  To restore English, run uninstall.ps1" -ForegroundColor Gray
-Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host ""
-Read-Host "Press Enter to close"
+Read-Host "Press Enter to exit"

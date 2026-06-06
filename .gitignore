@@ -1,6 +1,7 @@
 # Generated files
 en-US-hacked.json
 debug.log
+*.log
 
 # Debug/test scripts
 debug_write.ps1
@@ -8,9 +9,17 @@ debug_write.ps1
 # Python
 __pycache__/
 *.pyc
+.pytest_cache/
 
 # Chunks (translation work files, can be regenerated)
 chunks/
 
 # Temp
 *.tmp
+*.bak
+*.orig
+*.new
+
+# Local environment files
+.env
+.env.*

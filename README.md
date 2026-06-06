@@ -1,167 +1,146 @@
 # Claude Desktop Chinese Patch / Claude 桌面版中文汉化补丁
 
-> **一行命令，让 Claude 桌面版变成中文界面。**
+> 一行命令，让 Windows 版 Claude Desktop 显示简体中文界面。
 
+[![Validate](https://github.com/good9527/Claude-Desktop-Chinese/actions/workflows/validate.yml/badge.svg)](https://github.com/good9527/Claude-Desktop-Chinese/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Windows](https://img.shields.io/badge/Platform-Windows%2010%2F11-blue.svg)]()
 [![Coverage](https://img.shields.io/badge/Coverage-99.6%25-green.svg)]()
 
-**Claude 桌面版中文语言包** | **Claude Desktop Chinese Patch** | **Claude 汉化补丁** | **Claude 中文界面** | **Claude Language Patch**
+本项目为 Windows 上的 Claude Desktop 提供简体中文界面补丁。脚本会读取 Claude 自带的英文语言文件 `en-US.json`，将已翻译的文本替换为中文，并在安装前自动备份原始文件。
 
-Windows 上的 Claude 桌面版本身不支持中文。本补丁通过替换内置翻译文件，将整个界面（聊天窗口、设置面板、菜单栏）汉化为简体中文，覆盖 15,000+ 条文本，覆盖率 99.6%。
+> 注意：这不是官方语言切换功能。Claude 设置里仍会显示 `English (United States)`，但界面文本会显示为中文。
 
-> ⚠️ 本补丁会修改 Claude 的英文翻译文件内容（en-US.json），将其中的英文替换为中文。语言设置中仍然显示 "English (United States)"，但实际显示的是中文。这不是真正的语言切换，而是一种"偷梁换柱"的实现方式。
+## 特性
 
----
-
-## 效果预览
-
-安装后 Claude 桌面版界面：聊天对话、设置菜单、标题栏、按钮等全部显示中文。
-
----
+- 支持 Microsoft Store 安装的 Claude Desktop
+- 支持一行命令在线安装，也支持下载 ZIP 后离线安装
+- 自动请求管理员权限并关闭正在运行的 Claude
+- 首次安装自动备份原始 `en-US.json`
+- 可重复安装，适合 Claude 更新后重新应用补丁
+- 提供卸载脚本，可恢复到原始英文界面
+- 提供验证脚本和 GitHub Actions，便于开源协作维护
 
 ## 系统要求
 
-- **操作系统：** Windows 10 或 Windows 11
-- **Claude 版本：** 从 [Microsoft Store](https://apps.microsoft.com/detail/claude/) 安装的 Claude Desktop
-- **权限：** 需要管理员权限（修改系统保护目录需要）
+- Windows 10 或 Windows 11
+- 从 [Microsoft Store](https://apps.microsoft.com/detail/claude/) 安装的 Claude Desktop
+- 管理员权限
 
----
+## 安装
 
-## 安装方法（二选一）
+### 方法一：一行命令安装
 
-### 方法一：一行命令安装（推荐）
-
-1. **右键** Windows 开始菜单 → 选择 **"终端(管理员)"** 或 **"Windows PowerShell(管理员)"**
-2. 粘贴以下命令，按回车：
+打开 Windows Terminal 或 PowerShell，粘贴以下命令并回车：
 
 ```powershell
 iwr -useb https://raw.githubusercontent.com/good9527/Claude-Desktop-Chinese/main/install.ps1 | iex
 ```
 
-3. 等待自动完成，Claude 会自动重启并显示中文
+如果当前窗口不是管理员权限，脚本会自动弹出 UAC 请求并在新的管理员窗口中继续执行。
 
-### 方法二：下载安装包
+### 方法二：下载后安装
 
-1. 点击页面上方绿色 **Code** 按钮 → **Download ZIP**
-2. 解压 ZIP 文件到任意位置
+1. 点击 GitHub 页面上的 `Code` -> `Download ZIP`
+2. 解压到任意目录
 3. 双击 `install.bat`
-4. 弹出管理员权限提示时点击 **"是"**
-5. 等待自动完成
+4. 按提示允许管理员权限
 
----
+下载方式会优先使用本地 `dist/zh-CN.json`，因此可以离线安装。
 
-## 卸载还原（恢复英文）
+## 卸载
 
 ### 一行命令卸载
-
-1. **右键** 开始菜单 → **"终端(管理员)"**
-2. 粘贴以下命令，按回车：
 
 ```powershell
 iwr -useb https://raw.githubusercontent.com/good9527/Claude-Desktop-Chinese/main/uninstall.ps1 | iex
 ```
 
-### 或双击卸载
+### 下载后卸载
 
-双击解压目录中的 `uninstall.bat` 即可。
+双击解压目录中的 `uninstall.bat`。
 
----
-
-## 安装流程详解
-
-以下是安装脚本的完整执行流程：
-
-### 第 1 步：检测 Claude 安装位置
-脚本通过 Windows 的 `Get-AppxPackage` 命令自动查找 Claude 的安装路径。无论你安装的是哪个版本（1.9xxx、2.0xxx 等），都能自动识别，无需手动指定路径。
-
-### 第 2 步：加载中文字典
-脚本从 GitHub 下载（在线模式）或从本地读取（离线模式）中文翻译字典文件 `zh-CN.json`，包含 15,170 条翻译。
-
-### 第 3 步：关闭 Claude
-自动关闭正在运行的 Claude 进程，以便修改翻译文件。
-
-### 第 4 步：备份 + 合并 + 写入
-- **备份：** 首次安装时，将原始英文 `en-US.json` 备份到 `%LOCALAPPDATA%\Claude-Chinese-Patch\en-US-original.json`（后续卸载时使用）
-- **合并：** 读取原始英文文件的 15,209 个 key，将其中 15,153 个替换为中文翻译，剩余 56 个保留英文
-- **写入：** 将合并后的文件写回 Claude 的翻译目录。由于 WindowsApps 目录有系统保护，使用 .NET 的 `IO.File.Copy` 方法绕过限制
-
-### 第 5 步：启动 Claude
-自动重启 Claude，界面将显示中文。关闭安装脚本窗口不会影响 Claude。
-
----
-
-## 卸载流程详解
-
-### 第 1 步：检测 Claude 安装位置
-同安装流程。
-
-### 第 2 步：关闭 Claude
-自动关闭正在运行的 Claude 进程。
-
-### 第 3 步：还原备份
-从 `%LOCALAPPDATA%\Claude-Chinese-Patch\en-US-original.json` 读取原始英文文件，写回 Claude 的翻译目录。
-
-### 第 4 步：启动 Claude
-自动重启 Claude，界面恢复英文。
-
----
+卸载脚本会从 `%LOCALAPPDATA%\Claude-Chinese-Patch\en-US-original.json` 恢复原始英文文件。备份文件会保留，方便后续再次安装或排查问题。
 
 ## Claude 更新后怎么办
 
-Claude 会自动更新。更新后翻译文件会被还原为英文，补丁失效。
+Claude 自动更新后可能会恢复官方语言文件，导致中文界面失效。重新运行安装命令即可再次应用补丁。
 
-**解决方法：** 重新运行安装命令即可。备份文件不会丢失，可以反复安装。
-
----
+如果 Claude 新版本增加了新的文本 key，未翻译的少量文本会保留英文；后续更新 `dist/zh-CN.json` 后即可覆盖。
 
 ## 文件说明
 
 | 文件 | 作用 |
-|------|------|
-| `dist/zh-CN.json` | 中文翻译字典（15,170 条，907KB） |
-| `install.ps1` | 安装脚本（支持在线和本地两种模式） |
-| `install.bat` | 双击安装入口（自动请求管理员权限） |
-| `uninstall.ps1` | 卸载脚本 |
+| --- | --- |
+| `dist/zh-CN.json` | 发布用中文翻译字典（15,170 条，覆盖约 99.6%） |
+| `zh-CN-ion.json` | 翻译源文件，内容应与 `dist/zh-CN.json` 保持一致 |
+| `install.ps1` | 主安装脚本，支持在线和本地字典 |
+| `install.bat` | 双击安装入口 |
+| `uninstall.ps1` | 卸载还原脚本 |
 | `uninstall.bat` | 双击卸载入口 |
-| `LICENSE` | MIT 开源协议 |
+| `scripts/validate.py` | 项目质量校验脚本 |
+| `.github/workflows/validate.yml` | GitHub Actions 校验流程 |
 
----
+## 工作原理
+
+1. 自动检测 Claude Desktop 的安装目录
+2. 关闭正在运行的 Claude 进程
+3. 首次安装时备份原始 `en-US.json`
+4. 读取 Claude 当前版本的英文 key
+5. 用 `dist/zh-CN.json` 中存在的翻译替换对应 value
+6. 对未翻译或新版本新增的 key 保留英文原文
+7. 写回并重新解析 JSON 做基础校验
+8. 重启 Claude
+
+这种合并方式比直接覆盖整份语言文件更兼容新版本：当 Claude 新增 key 时，脚本不会删除它们。
 
 ## 常见问题
 
-### Q: 安装后语言设置显示什么？
-仍然显示 "English (United States)"，但实际界面是中文。这是因为我们修改的是英文翻译文件的内容，而不是添加新的语言选项。
+### 安装后语言设置显示什么？
 
-### Q: 安装失败怎么办？
-- 确保以**管理员身份**运行
-- 确保 Claude 已从 Microsoft Store 安装
-- 确保网络连接正常（在线模式需要下载翻译文件）
+仍然显示 `English (United States)`，但实际界面文本会显示中文。
 
-### Q: Claude 更新后中文消失了？
-正常现象。重新运行安装命令即可恢复。
+### 安装失败怎么办？
 
-### Q: 卸载后中文还在？
-确保以管理员身份运行卸载脚本。如果仍然不行，可以重装 Claude。
+- 确认 Claude Desktop 已从 Microsoft Store 安装
+- 确认允许了管理员权限
+- 确认 Claude 已完全关闭
+- 在线安装失败时，可以下载 ZIP 后双击 `install.bat` 离线安装
 
-### Q: 这个补丁安全吗？
-- 本项目只包含自研的中文翻译文件，不包含任何 Anthropic 版权代码
-- 安装前会自动备份原始文件
-- 卸载后完全恢复原状
+### 卸载后还是中文怎么办？
+
+重新运行卸载脚本并确认允许管理员权限。如果备份文件丢失，可以从 Microsoft Store 重新安装 Claude。
+
+### 这个项目安全吗？
+
+- 项目只发布翻译文件和安装脚本，不包含 Anthropic 的程序代码
+- 安装前会备份原始语言文件
+- 卸载脚本会恢复备份
 - 代码开源，可自行审查
 
----
+## 维护与校验
+
+开发者可以在提交前运行：
+
+```powershell
+python scripts/validate.py
+```
+
+校验内容包括：
+
+- 翻译 JSON 是否可解析
+- `dist/zh-CN.json` 是否与 `zh-CN-ion.json` 一致
+- 翻译覆盖率是否保持在合理范围
+- README 中声明的翻译数量是否与实际文件一致
+- 安装/卸载脚本是否能被 PowerShell 解析
+- 仓库中是否出现明显的密钥格式
 
 ## 法律声明
 
-本项目仅发布自研的中文翻译内容，不包含任何 Anthropic 版权代码。`zh-CN.json` 文件仅包含翻译键值对（如 `{"key": "中文值"}`），不包含原始英文内容。
-
-本项目与 Anthropic 公司无关，为社区自发的汉化项目。
-
----
+本项目仅发布社区维护的中文翻译内容和安装脚本，不包含 Anthropic 或 Claude Desktop 的版权程序代码。本项目与 Anthropic 公司无关。
 
 ## Credits
 
-- 翻译：Claude AI 辅助生成
-- 覆盖率：15,153 / 15,209 字符串（99.6%）
+- 翻译：Claude AI 辅助生成和人工整理
+- 覆盖率：15,153 / 15,209 个参考 key（约 99.6%）
 - 协议：MIT
