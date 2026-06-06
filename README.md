@@ -78,6 +78,9 @@ Claude 自动更新后可能会恢复官方语言文件，导致中文界面失�
 | `install.bat` | 双击安装入口 |
 | `uninstall.ps1` | 卸载还原脚本 |
 | `uninstall.bat` | 双击卸载入口 |
+| `split_chunks.py` | 将英文参考 JSON 拆分为翻译分块 |
+| `merge.py` / `merge2.py` | 合并翻译分块，`merge2.py` 带轻量 JSON 修复 |
+| `translate.py` / `translate2.py` / `translate3.py` | 可选翻译辅助脚本，分别使用不同翻译方式 |
 | `scripts/validate.py` | 项目质量校验脚本 |
 | `.github/workflows/validate.yml` | GitHub Actions 校验流程 |
 
@@ -126,6 +129,18 @@ Claude 自动更新后可能会恢复官方语言文件，导致中文界面失�
 python scripts/validate.py
 ```
 
+常用翻译维护流程：
+
+```powershell
+python split_chunks.py --source en-US-957k.json --chunk-dir chunks --chunk-size 500
+python translate3.py --source en-US-957k.json --output zh-CN-ion.json
+python merge.py --chunk-dir chunks --output zh-CN-ion.json
+Copy-Item zh-CN-ion.json dist\zh-CN.json
+python scripts/validate.py
+```
+
+`translate.py` 依赖 `googletrans`，`translate2.py` 依赖 `deep-translator`，`translate3.py` 使用公共 Google Translate HTTP 端点且支持 checkpoint。翻译服务可能限流，建议先用小批量测试。
+
 校验内容包括：
 
 - 翻译 JSON 是否可解析
@@ -133,6 +148,8 @@ python scripts/validate.py
 - 翻译覆盖率是否保持在合理范围
 - README 中声明的翻译数量是否与实际文件一致
 - 安装/卸载脚本是否能被 PowerShell 解析
+- Python 维护脚本是否能解析
+- 维护脚本中是否残留本机绝对路径
 - 仓库中是否出现明显的密钥格式
 
 ## 法律声明

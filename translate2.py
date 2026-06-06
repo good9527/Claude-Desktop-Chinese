@@ -1,105 +1,140 @@
 #!/usr/bin/env python3
-"""
-Translate Claude Desktop en-US.json to zh-CN using deep_translator.
-Fast batch translation with progress tracking.
-"""
-import json, os, sys, time, re
-from deep_translator import GoogleTranslator
+"""Translate en-US strings to zh-CN using deep-translator."""
 
-SOURCE = r"H:\2026年项目\5.Claude汉化\en-US-957k.json"
-OUTPUT = r"H:\2026年项目\5.Claude汉化\zh-CN-ion.json"
+from __future__ import annotations
 
-translator = GoogleTranslator(source='en', target='zh-CN')
+import argparse
+import json
+import re
+import time
+from pathlib import Path
 
-with open(SOURCE, "r", encoding="utf-8") as f:
-    data = json.load(f)
+try:
+    from deep_translator import GoogleTranslator
+except ImportError as exc:
+    raise SystemExit("Missing dependency: pip install deep-translator") from exc
 
-total = len(data)
-print(f"Total keys: {total}", flush=True)
 
-def skip(val):
-    if not isinstance(val, str) or len(val.strip()) <= 2:
+ROOT = Path(__file__).resolve().parent
+DEFAULT_SOURCE = ROOT / "en-US-957k.json"
+DEFAULT_OUTPUT = ROOT / "zh-CN-ion.json"
+
+
+def load_json(path: Path) -> dict[str, object]:
+    with path.open("r", encoding="utf-8-sig") as fh:
+        data = json.load(fh)
+    if not isinstance(data, dict):
+        raise ValueError(f"{path} must contain a JSON object")
+    return data
+
+
+def write_json(path: Path, data: dict[str, object]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as fh:
+        json.dump(data, fh, ensure_ascii=False, indent=2)
+        fh.write("\n")
+
+
+def skip(value: object) -> bool:
+    if not isinstance(value, str) or len(value.strip()) <= 2:
         return True
-    if re.match(r'^[\s{}\[\]<>/\-\d.:]+$', val):
-        return True
-    return False
+    return bool(re.match(r"^[\s{}\[\]<>/\-\d.:]+$", value))
 
-def protect(text):
-    phs = {}
-    c = [0]
-    def rep(pat, t):
-        for m in list(re.finditer(pat, t)):
-            k = f"PH{c[0]}X"
-            phs[k] = m.group(0)
-            t = t.replace(m.group(0), k, 1)
-            c[0] += 1
-        return t
-    text = rep(r'\{[^}]+\}', text)
-    text = rep(r'</?[a-zA-Z][^>]*>', text)
-    text = rep(r'https?://\S+', text)
-    return text, phs
 
-def restore(text, phs):
-    for k, v in phs.items():
-        text = text.replace(k, v)
+def protect(text: str) -> tuple[str, dict[str, str]]:
+    placeholders: dict[str, str] = {}
+    counter = 0
+
+    def replace(pattern: str, value: str) -> str:
+        nonlocal counter
+        for match in list(re.finditer(pattern, value)):
+            key = f"PH{counter}X"
+            placeholders[key] = match.group(0)
+            value = value.replace(match.group(0), key, 1)
+            counter += 1
+        return value
+
+    text = replace(r"\{[^}]+\}", text)
+    text = replace(r"</?[a-zA-Z][^>]*>", text)
+    text = replace(r"https?://\S+", text)
+    text = replace(r"`[^`]+`", text)
+    return text, placeholders
+
+
+def restore(text: str, placeholders: dict[str, str]) -> str:
+    for key, value in placeholders.items():
+        text = text.replace(key, value)
     return text
 
-keys = list(data.keys())
-values = list(data.values())
-translated = list(values)
 
-# Collect indices that need translation
-to_translate = []
-for i, v in enumerate(values):
-    if not skip(v):
-        protected, phs = protect(v)
-        to_translate.append((i, protected, phs))
+def has_cjk(value: object) -> bool:
+    return isinstance(value, str) and any("\u4e00" <= char <= "\u9fff" for char in value)
 
-print(f"Strings to translate: {len(to_translate)}", flush=True)
-print(f"Skipped (no translation needed): {total - len(to_translate)}", flush=True)
 
-# Translate in batches
-BATCH = 20
-errors = 0
-for start in range(0, len(to_translate), BATCH):
-    batch = to_translate[start:start+BATCH]
-    texts = [b[1] for b in batch]
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--source", type=Path, default=DEFAULT_SOURCE, help="source en-US JSON file")
+    parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT, help="translated zh-CN output file")
+    parser.add_argument("--batch-size", type=int, default=20, help="number of strings per batch")
+    parser.add_argument("--sleep", type=float, default=0.3, help="delay between batches")
+    args = parser.parse_args()
 
-    try:
-        results = translator.translate_batch(texts)
-        for (idx, _, phs), res in zip(batch, results):
-            if res:
-                translated[idx] = restore(res, phs)
-    except Exception as e:
-        errors += 1
-        # Fallback: one by one
-        for idx, text, phs in batch:
-            try:
-                res = translator.translate(text)
-                if res:
-                    translated[idx] = restore(res, phs)
-                time.sleep(0.15)
-            except:
-                pass
+    if args.batch_size <= 0:
+        raise SystemExit("--batch-size must be greater than zero")
 
-    done = min(start + BATCH, len(to_translate))
-    pct = done * 100 // len(to_translate)
-    print(f"\rProgress: {done}/{len(to_translate)} ({pct}%) | Errors: {errors}", end="", flush=True)
+    translator = GoogleTranslator(source="en", target="zh-CN")
+    data = load_json(args.source)
+    keys = list(data.keys())
+    values = list(data.values())
+    translated = list(values)
 
-    if start + BATCH < len(to_translate):
-        time.sleep(0.3)
+    to_translate: list[tuple[int, str, dict[str, str]]] = []
+    for index, value in enumerate(values):
+        if isinstance(value, str) and not skip(value):
+            protected, placeholders = protect(value)
+            to_translate.append((index, protected, placeholders))
 
-print("", flush=True)
+    print(f"Source: {args.source}", flush=True)
+    print(f"Total keys: {len(values)}", flush=True)
+    print(f"Strings to translate: {len(to_translate)}", flush=True)
+    print(f"Skipped: {len(values) - len(to_translate)}", flush=True)
 
-# Build and save
-output = dict(zip(keys, translated))
-with open(OUTPUT, "w", encoding="utf-8") as f:
-    json.dump(output, f, ensure_ascii=False, indent=2)
+    errors = 0
+    for start in range(0, len(to_translate), args.batch_size):
+        batch = to_translate[start : start + args.batch_size]
+        texts = [item[1] for item in batch]
 
-# Verify
-with open(OUTPUT, "r", encoding="utf-8") as f:
-    v = json.load(f)
-chinese_count = sum(1 for val in v.values() if isinstance(val, str) and any('一' <= c <= '鿿' for c in val))
-print(f"\nDone! Output: {OUTPUT}")
-print(f"Total keys: {len(v)}")
-print(f"Keys with Chinese: {chinese_count}/{len(v)} ({chinese_count*100//len(v)}%)")
+        try:
+            results = translator.translate_batch(texts)
+            for (index, _, placeholders), result in zip(batch, results):
+                if result:
+                    translated[index] = restore(result, placeholders)
+        except Exception:
+            errors += 1
+            for index, text, placeholders in batch:
+                try:
+                    result = translator.translate(text)
+                    if result:
+                        translated[index] = restore(result, placeholders)
+                    time.sleep(0.15)
+                except Exception:
+                    pass
+
+        done = min(start + args.batch_size, len(to_translate))
+        percent = done * 100 // len(to_translate) if to_translate else 100
+        print(f"\rProgress: {done}/{len(to_translate)} ({percent}%) | Errors: {errors}", end="", flush=True)
+        if start + args.batch_size < len(to_translate):
+            time.sleep(args.sleep)
+
+    print("", flush=True)
+    output = dict(zip(keys, translated))
+    write_json(args.output, output)
+
+    chinese = sum(1 for value in output.values() if has_cjk(value))
+    print(f"\nDone! Output: {args.output}")
+    print(f"Total keys: {len(output)}")
+    print(f"Keys with Chinese: {chinese}/{len(output)} ({chinese * 100 // len(output)}%)")
+
+
+if __name__ == "__main__":
+    main()

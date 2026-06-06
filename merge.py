@@ -1,28 +1,65 @@
 #!/usr/bin/env python3
-"""Merge all translated chunks into zh-CN-ion.json"""
-import json, os, glob
+"""Merge translated chunk JSON files into zh-CN-ion.json."""
 
-CHUNK_DIR = r"H:\2026年项目\5.Claude汉化\chunks"
-OUTPUT = r"H:\2026年项目\5.Claude汉化\zh-CN-ion.json"
+from __future__ import annotations
 
-merged = {}
-files = sorted(glob.glob(os.path.join(CHUNK_DIR, "*_zh.json")))
+import argparse
+import json
+from pathlib import Path
 
-for f in files:
-    with open(f, "r", encoding="utf-8") as fh:
+
+ROOT = Path(__file__).resolve().parent
+DEFAULT_CHUNK_DIR = ROOT / "chunks"
+DEFAULT_OUTPUT = ROOT / "zh-CN-ion.json"
+
+
+def load_json(path: Path) -> dict[str, object]:
+    with path.open("r", encoding="utf-8-sig") as fh:
         data = json.load(fh)
+    if not isinstance(data, dict):
+        raise ValueError(f"{path} must contain a JSON object")
+    return data
+
+
+def write_json(path: Path, data: dict[str, object]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as fh:
+        json.dump(data, fh, ensure_ascii=False, indent=2)
+        fh.write("\n")
+
+
+def has_cjk(value: object) -> bool:
+    return isinstance(value, str) and any("\u4e00" <= char <= "\u9fff" for char in value)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--chunk-dir", type=Path, default=DEFAULT_CHUNK_DIR, help="directory containing *_zh.json files")
+    parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT, help="merged zh-CN output file")
+    args = parser.parse_args()
+
+    files = sorted(args.chunk_dir.glob("*_zh.json"))
+    if not files:
+        raise SystemExit(f"No translated chunks found in {args.chunk_dir}")
+
+    merged: dict[str, object] = {}
+    duplicate_keys: set[str] = set()
+
+    for path in files:
+        data = load_json(path)
+        duplicate_keys.update(set(merged) & set(data))
         merged.update(data)
-    print(f"  Merged {os.path.basename(f)}: {len(data)} keys")
+        print(f"  Merged {path.name}: {len(data)} keys")
 
-with open(OUTPUT, "w", encoding="utf-8") as fh:
-    json.dump(merged, fh, ensure_ascii=False, indent=2)
+    write_json(args.output, merged)
 
-# Verify
-with open(OUTPUT, "r", encoding="utf-8") as fh:
-    verify = json.load(fh)
+    chinese = sum(1 for value in merged.values() if has_cjk(value))
+    print(f"\nTotal keys: {len(merged)}")
+    print(f"Keys with Chinese: {chinese}/{len(merged)} ({chinese * 100 // len(merged)}%)")
+    print(f"Duplicate keys overwritten: {len(duplicate_keys)}")
+    print(f"Output: {args.output}")
+    print(f"Size: {args.output.stat().st_size / 1024:.0f} KB")
 
-chinese = sum(1 for v in verify.values() if isinstance(v, str) and any('一' <= c <= '鿿' for c in v))
-print(f"\nTotal keys: {len(verify)}")
-print(f"Keys with Chinese: {chinese}/{len(verify)} ({chinese*100//len(verify)}%)")
-print(f"Output: {OUTPUT}")
-print(f"Size: {os.path.getsize(OUTPUT) / 1024:.0f} KB")
+
+if __name__ == "__main__":
+    main()

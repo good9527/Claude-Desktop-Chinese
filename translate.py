@@ -1,147 +1,146 @@
 #!/usr/bin/env python3
-"""
-Translate Claude Desktop UI strings from English to Chinese using Google Translate.
-Handles 15000+ keys with batching and rate limiting.
-"""
+"""Translate en-US strings to zh-CN using googletrans."""
+
+from __future__ import annotations
+
+import argparse
 import json
-import os
-import sys
-import time
 import re
+import time
+from pathlib import Path
 
-# Try to use googletrans
-try:
-    from googletrans import Translator
-    translator = Translator()
-    USE_GOOGLE = True
-    print("Using Google Translate API")
-except ImportError:
-    USE_GOOGLE = False
-    print("googletrans not available, using fallback")
+ROOT = Path(__file__).resolve().parent
+DEFAULT_SOURCE = ROOT / "en-US-957k.json"
+DEFAULT_OUTPUT = ROOT / "zh-CN-ion.json"
 
-SOURCE = r"H:\2026年项目\5.Claude汉化\en-US-957k.json"
-OUTPUT = r"H:\2026年项目\5.Claude汉化\zh-CN-ion.json"
 
-with open(SOURCE, "r", encoding="utf-8") as f:
-    data = json.load(f)
+def load_json(path: Path) -> dict[str, object]:
+    with path.open("r", encoding="utf-8-sig") as fh:
+        data = json.load(fh)
+    if not isinstance(data, dict):
+        raise ValueError(f"{path} must contain a JSON object")
+    return data
 
-total = len(data)
-print(f"Total keys to translate: {total}")
 
-# Protect variables and tags from translation
-def protect(text):
-    """Replace variables/tags with placeholders before translation"""
-    if not isinstance(text, str):
-        return text, []
-    placeholders = {}
-    counter = [0]
+def write_json(path: Path, data: dict[str, object]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as fh:
+        json.dump(data, fh, ensure_ascii=False, indent=2)
+        fh.write("\n")
 
-    def replace_match(pattern, text):
+
+def protect(text: str) -> tuple[str, dict[str, str]]:
+    placeholders: dict[str, str] = {}
+    counter = 0
+
+    def replace(pattern: str, value: str) -> str:
         nonlocal counter
-        matches = list(re.finditer(pattern, text))
-        for m in matches:
-            key = f"__PH{counter[0]}__"
-            placeholders[key] = m.group(0)
-            text = text.replace(m.group(0), key, 1)
-            counter[0] += 1
-        return text
+        for match in list(re.finditer(pattern, value)):
+            key = f"__PH{counter}__"
+            placeholders[key] = match.group(0)
+            value = value.replace(match.group(0), key, 1)
+            counter += 1
+        return value
 
-    # Protect {variables}
-    text = replace_match(r'\{[^}]+\}', text)
-    # Protect <tags>
-    text = replace_match(r'</?[a-zA-Z][^>]*>', text)
-    # Protect URLs
-    text = replace_match(r'https?://\S+', text)
-    # Protect code blocks
-    text = replace_match(r'`[^`]+`', text)
-
+    text = replace(r"\{[^}]+\}", text)
+    text = replace(r"</?[a-zA-Z][^>]*>", text)
+    text = replace(r"https?://\S+", text)
+    text = replace(r"`[^`]+`", text)
     return text, placeholders
 
-def restore(text, placeholders):
-    """Restore placeholders after translation"""
-    for key, val in placeholders.items():
-        text = text.replace(key, val)
+
+def restore(text: str, placeholders: dict[str, str]) -> str:
+    for key, value in placeholders.items():
+        text = text.replace(key, value)
     return text
 
-# Skip strings that don't need translation
-def skip_translate(value):
-    """Check if value should be skipped (no real text to translate)"""
-    if not isinstance(value, str):
-        return True
-    # Pure numbers, symbols, or very short
-    if len(value.strip()) <= 2:
-        return True
-    # Pure variables
-    if re.match(r'^[\s{}\[\]<>/\-\d.:]+$', value):
-        return True
-    return False
 
-# Batch translate using googletrans
-def translate_batch(texts, batch_size=20):
-    """Translate a list of texts in batches"""
-    results = list(texts)  # copy
-    to_translate = []
+def skip_translate(value: object) -> bool:
+    if not isinstance(value, str) or len(value.strip()) <= 2:
+        return True
+    return bool(re.match(r"^[\s{}\[\]<>/\-\d.:]+$", value))
 
-    for i, text in enumerate(texts):
-        if skip_translate(text):
-            continue
-        protected, placeholders = protect(text)
-        to_translate.append((i, protected, placeholders))
+
+def translate_batch(translator: object, texts: list[object], batch_size: int, sleep: float) -> list[object]:
+    results = list(texts)
+    to_translate: list[tuple[int, str, dict[str, str]]] = []
+
+    for index, text in enumerate(texts):
+        if isinstance(text, str) and not skip_translate(text):
+            protected, placeholders = protect(text)
+            to_translate.append((index, protected, placeholders))
 
     print(f"  {len(to_translate)} strings need translation (skipped {len(texts) - len(to_translate)})")
 
-    # Process in batches
     for batch_start in range(0, len(to_translate), batch_size):
-        batch = to_translate[batch_start:batch_start + batch_size]
-        batch_texts = [b[1] for b in batch]
+        batch = to_translate[batch_start : batch_start + batch_size]
+        batch_texts = [item[1] for item in batch]
 
         try:
-            translated = translator.translate(batch_texts, src='en', dest='zh-cn')
-            for (idx, _, placeholders), t in zip(batch, translated):
-                if t and t.text:
-                    results[idx] = restore(t.text, placeholders)
-                else:
-                    results[idx] = restore(batch_texts[batch.index((idx, _, placeholders))], placeholders)
-        except Exception as e:
-            print(f"  [WARN] Batch failed at {batch_start}: {e}")
-            # Fallback: translate one by one
-            for idx, protected, placeholders in batch:
+            translated = translator.translate(batch_texts, src="en", dest="zh-cn")
+            for (index, _, placeholders), result in zip(batch, translated):
+                if result and result.text:
+                    results[index] = restore(result.text, placeholders)
+        except Exception as exc:
+            print(f"  [WARN] Batch failed at {batch_start}: {exc}")
+            for index, protected, placeholders in batch:
                 try:
-                    t = translator.translate(protected, src='en', dest='zh-cn')
-                    if t and t.text:
-                        results[idx] = restore(t.text, placeholders)
+                    translated = translator.translate(protected, src="en", dest="zh-cn")
+                    if translated and translated.text:
+                        results[index] = restore(translated.text, placeholders)
                     time.sleep(0.1)
-                except:
-                    pass  # Keep original
+                except Exception:
+                    pass
 
         progress = min(batch_start + batch_size, len(to_translate))
-        print(f"  Progress: {progress}/{len(to_translate)} ({progress*100//len(to_translate)}%)")
+        percent = progress * 100 // len(to_translate) if to_translate else 100
+        print(f"  Progress: {progress}/{len(to_translate)} ({percent}%)")
 
         if batch_start + batch_size < len(to_translate):
-            time.sleep(0.5)  # Rate limiting
+            time.sleep(sleep)
 
     return results
 
-# Process all keys
-print("\nStarting translation...")
-keys = list(data.keys())
-values = list(data.values())
 
-translated_values = translate_batch(values, batch_size=10)
+def has_cjk(value: object) -> bool:
+    return isinstance(value, str) and any("\u4e00" <= char <= "\u9fff" for char in value)
 
-# Build output
-output = {}
-for k, v in zip(keys, translated_values):
-    output[k] = v
 
-# Write output
-with open(OUTPUT, "w", encoding="utf-8") as f:
-    json.dump(output, f, ensure_ascii=False, indent=2)
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--source", type=Path, default=DEFAULT_SOURCE, help="source en-US JSON file")
+    parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT, help="translated zh-CN output file")
+    parser.add_argument("--batch-size", type=int, default=10, help="number of strings per batch")
+    parser.add_argument("--sleep", type=float, default=0.5, help="delay between batches")
+    args = parser.parse_args()
 
-print(f"\nDone! Written to {OUTPUT}")
-print(f"Total keys: {len(output)}")
+    if args.batch_size <= 0:
+        raise SystemExit("--batch-size must be greater than zero")
 
-# Verify
-with open(OUTPUT, "r", encoding="utf-8") as f:
-    verify = json.load(f)
-print(f"Verification: {len(verify)} keys in output file")
+    data = load_json(args.source)
+    keys = list(data.keys())
+    values = list(data.values())
+
+    print("Using googletrans")
+    print(f"Source: {args.source}")
+    print(f"Total keys to translate: {len(data)}")
+    print("\nStarting translation...")
+
+    try:
+        from googletrans import Translator
+    except Exception as exc:
+        raise SystemExit("googletrans is unavailable or incompatible. Try: pip install googletrans==4.0.0rc1") from exc
+
+    translator = Translator()
+    translated_values = translate_batch(translator, values, batch_size=args.batch_size, sleep=args.sleep)
+    output = dict(zip(keys, translated_values))
+    write_json(args.output, output)
+
+    chinese = sum(1 for value in output.values() if has_cjk(value))
+    print(f"\nDone! Output: {args.output}")
+    print(f"Total keys: {len(output)}")
+    print(f"Keys with Chinese: {chinese}/{len(output)} ({chinese * 100 // len(output)}%)")
+
+
+if __name__ == "__main__":
+    main()

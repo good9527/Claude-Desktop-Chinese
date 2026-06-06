@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import re
 import subprocess
@@ -16,6 +17,18 @@ REFERENCE_EN = ROOT / "en-US-957k.json"
 RELEASE_ZH = ROOT / "dist" / "zh-CN.json"
 SOURCE_ZH = ROOT / "zh-CN-ion.json"
 POWERSHELL_SCRIPTS = (ROOT / "install.ps1", ROOT / "uninstall.ps1")
+PYTHON_SCRIPTS = (
+    ROOT / "create_hacked_enus.py",
+    ROOT / "merge.py",
+    ROOT / "merge2.py",
+    ROOT / "scripts" / "validate.py",
+    ROOT / "split_chunks.py",
+    ROOT / "translate.py",
+    ROOT / "translate2.py",
+    ROOT / "translate3.py",
+    ROOT / "win-automation-mcp" / "server.py",
+    ROOT / "win-automation-mcp" / "test_server.py",
+)
 MIN_COVERAGE = 0.98
 MIN_CHINESE_RATIO = 0.90
 
@@ -110,6 +123,66 @@ def validate_powershell_syntax() -> None:
         print(f"[OK] PowerShell syntax: {script.relative_to(ROOT)}")
 
 
+def validate_python_syntax() -> None:
+    for script in PYTHON_SCRIPTS:
+        text = script.read_text(encoding="utf-8-sig")
+        try:
+            ast.parse(text, filename=str(script))
+        except SyntaxError as exc:
+            fail(f"Python syntax error in {script.relative_to(ROOT)}: {exc}")
+        print(f"[OK] Python syntax: {script.relative_to(ROOT)}")
+
+
+def validate_no_local_absolute_paths() -> None:
+    path_patterns = [
+        re.compile(r"[A-Za-z]:\\"),
+        re.compile(r"\\\\Users\\\\", re.IGNORECASE),
+        re.compile(r"AppData\\Local\\Packages\\Claude_", re.IGNORECASE),
+    ]
+    scanned_suffixes = {".bat", ".md", ".ps1", ".py", ".toml", ".yml"}
+    allowed_paths = {ROOT / "README.md", ROOT / "scripts" / "validate.py"}
+
+    for path in tracked_text_files():
+        if "win-automation-mcp" in path.parts:
+            continue
+        if path.suffix.lower() not in scanned_suffixes:
+            continue
+        if path in allowed_paths:
+            continue
+        text = read_text_or_none(path)
+        if text is None:
+            continue
+        for pattern in path_patterns:
+            if pattern.search(text):
+                fail(f"local absolute path found in {path.relative_to(ROOT)}")
+
+    print("[OK] local absolute path scan")
+
+
+def tracked_text_files() -> list[Path]:
+    result = subprocess.run(
+        ["git", "ls-files"],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=True,
+    )
+    paths: list[Path] = []
+    for line in result.stdout.splitlines():
+        path = ROOT / line
+        if path.suffix.lower() in {".png", ".pyc"}:
+            continue
+        paths.append(path)
+    return paths
+
+
+def read_text_or_none(path: Path) -> str | None:
+    try:
+        return path.read_text(encoding="utf-8-sig")
+    except UnicodeDecodeError:
+        return None
+
+
 def validate_no_obvious_secrets() -> None:
     secret_patterns = [
         re.compile(r"ghp_[A-Za-z0-9_]{30,}"),
@@ -145,6 +218,8 @@ def main() -> None:
     validate_json_assets()
     validate_readme_stats()
     validate_no_obvious_secrets()
+    validate_no_local_absolute_paths()
+    validate_python_syntax()
     if not args.skip_powershell:
         validate_powershell_syntax()
 

@@ -1,88 +1,112 @@
 #!/usr/bin/env python3
-"""Fix and merge all translated chunks with robust JSON repair"""
-import json, os, glob, re
+"""Merge translated chunks with light JSON repair for malformed quote output."""
 
-CHUNK_DIR = r"H:\2026年项目\5.Claude汉化\chunks"
-OUTPUT = r"H:\2026年项目\5.Claude汉化\zh-CN-ion.json"
+from __future__ import annotations
 
-def fix_json_quotes(content):
-    """Fix unescaped double quotes inside JSON string values"""
-    lines = content.split('\n')
-    fixed = []
-    for line in lines:
-        m = re.match(r'^(\s*"[^"]+":\s*")(.*)("[\s,]*$)', line)
-        if m:
-            prefix, value, suffix = m.groups()
-            # Count quotes in value - if odd number, there are unescaped quotes
-            if value.count('"') % 2 != 0 or ('"' in value and not value.startswith('{')):
-                # Replace unescaped inner " with Chinese quotes
-                # Find pairs of inner quotes
-                new_val = []
-                in_quote = False
-                for ch in value:
-                    if ch == '"':
-                        if not in_quote:
-                            new_val.append('“')  # left "
-                            in_quote = True
-                        else:
-                            new_val.append('”')  # right "
-                            in_quote = False
-                    else:
-                        new_val.append(ch)
-                value = ''.join(new_val)
-            fixed.append(prefix + value + suffix)
-        else:
+import argparse
+import json
+import re
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parent
+DEFAULT_CHUNK_DIR = ROOT / "chunks"
+DEFAULT_OUTPUT = ROOT / "zh-CN-ion.json"
+
+
+def fix_json_quotes(content: str) -> str:
+    """Replace likely unescaped inner quotes in JSON string values."""
+    fixed: list[str] = []
+    for line in content.splitlines():
+        match = re.match(r'^(\s*"[^"]+":\s*")(.*)("[\s,]*$)', line)
+        if not match:
             fixed.append(line)
-    return '\n'.join(fixed)
+            continue
 
-def load_chunk(filepath):
-    """Load a chunk JSON file, fixing common issues"""
-    with open(filepath, 'r', encoding='utf-8') as f:
-        content = f.read()
+        prefix, value, suffix = match.groups()
+        if '"' not in value:
+            fixed.append(line)
+            continue
 
-    # Try direct parse first
-    try:
-        return json.loads(content)
-    except json.JSONDecodeError:
-        pass
+        new_value: list[str] = []
+        opening = True
+        for char in value:
+            if char == '"':
+                new_value.append("“" if opening else "”")
+                opening = not opening
+            else:
+                new_value.append(char)
+        fixed.append(prefix + "".join(new_value) + suffix)
 
-    # Try fixing unescaped quotes
-    fixed = fix_json_quotes(content)
-    try:
-        return json.loads(fixed)
-    except json.JSONDecodeError as e:
-        print(f"  [WARN] {os.path.basename(filepath)} still has errors after fix: {e}")
-        # Try line-by-line extraction
-        return extract_kv_pairs(content)
+    return "\n".join(fixed)
 
-def extract_kv_pairs(content):
-    """Extract key-value pairs using regex as fallback"""
-    result = {}
-    # Match "key": "value" patterns
-    for m in re.finditer(r'"([^"]+)":\s*"((?:[^"\\]|\\.)*)"\s*[,\n}]', content):
-        key, val = m.group(1), m.group(2)
-        # Unescape JSON escapes
-        val = val.replace('\\"', '"').replace('\\n', '\n').replace('\\t', '\t')
-        result[key] = val
+
+def extract_kv_pairs(content: str) -> dict[str, str]:
+    """Extract simple JSON string key/value pairs as a last-resort fallback."""
+    result: dict[str, str] = {}
+    for match in re.finditer(r'"([^"]+)":\s*"((?:[^"\\]|\\.)*)"\s*[,}\n]', content):
+        key, value = match.group(1), match.group(2)
+        result[key] = value.replace('\\"', '"').replace("\\n", "\n").replace("\\t", "\t")
     return result
 
-# Process all chunks
-merged = {}
-files = sorted(glob.glob(os.path.join(CHUNK_DIR, "*_zh.json")))
 
-for f in files:
-    basename = os.path.basename(f)
-    data = load_chunk(f)
-    merged.update(data)
-    print(f"  {basename}: {len(data)} keys")
+def load_chunk(path: Path) -> dict[str, object]:
+    content = path.read_text(encoding="utf-8-sig")
 
-# Write output
-with open(OUTPUT, "w", encoding="utf-8") as fh:
-    json.dump(merged, fh, ensure_ascii=False, indent=2)
+    try:
+        data = json.loads(content)
+    except json.JSONDecodeError:
+        fixed = fix_json_quotes(content)
+        try:
+            data = json.loads(fixed)
+        except json.JSONDecodeError as exc:
+            print(f"  [WARN] {path.name} still has JSON errors after quote repair: {exc}")
+            data = extract_kv_pairs(content)
 
-# Stats
-chinese = sum(1 for v in merged.values() if isinstance(v, str) and any('一' <= c <= '鿿' for c in v))
-print(f"\nTotal keys: {len(merged)}")
-print(f"Keys with Chinese: {chinese}/{len(merged)} ({chinese*100//len(merged)}%)")
-print(f"Output: {OUTPUT}")
-print(f"Size: {os.path.getsize(OUTPUT) / 1024:.0f} KB")
+    if not isinstance(data, dict):
+        raise ValueError(f"{path} must contain a JSON object")
+    return data
+
+
+def write_json(path: Path, data: dict[str, object]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as fh:
+        json.dump(data, fh, ensure_ascii=False, indent=2)
+        fh.write("\n")
+
+
+def has_cjk(value: object) -> bool:
+    return isinstance(value, str) and any("\u4e00" <= char <= "\u9fff" for char in value)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--chunk-dir", type=Path, default=DEFAULT_CHUNK_DIR, help="directory containing *_zh.json files")
+    parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT, help="merged zh-CN output file")
+    args = parser.parse_args()
+
+    files = sorted(args.chunk_dir.glob("*_zh.json"))
+    if not files:
+        raise SystemExit(f"No translated chunks found in {args.chunk_dir}")
+
+    merged: dict[str, object] = {}
+    duplicate_keys: set[str] = set()
+
+    for path in files:
+        data = load_chunk(path)
+        duplicate_keys.update(set(merged) & set(data))
+        merged.update(data)
+        print(f"  {path.name}: {len(data)} keys")
+
+    write_json(args.output, merged)
+
+    chinese = sum(1 for value in merged.values() if has_cjk(value))
+    print(f"\nTotal keys: {len(merged)}")
+    print(f"Keys with Chinese: {chinese}/{len(merged)} ({chinese * 100 // len(merged)}%)")
+    print(f"Duplicate keys overwritten: {len(duplicate_keys)}")
+    print(f"Output: {args.output}")
+    print(f"Size: {args.output.stat().st_size / 1024:.0f} KB")
+
+
+if __name__ == "__main__":
+    main()
