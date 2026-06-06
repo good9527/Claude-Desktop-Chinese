@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 REFERENCE_EN = ROOT / "local" / "en-US.json"
 RELEASE_ZH = ROOT / "dist" / "zh-CN.json"
 SOURCE_ZH = ROOT / "zh-CN-ion.json"
-POWERSHELL_SCRIPTS = (ROOT / "install.ps1", ROOT / "uninstall.ps1")
+POWERSHELL_SCRIPTS = (ROOT / "install.ps1", ROOT / "uninstall.ps1", ROOT / "install-old-working.ps1")
 PYTHON_SCRIPTS = (
     ROOT / "create_hacked_enus.py",
     ROOT / "merge.py",
