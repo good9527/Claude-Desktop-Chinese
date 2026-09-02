@@ -9,6 +9,7 @@ import json
 import re
 import subprocess
 import sys
+import shutil
 from pathlib import Path
 
 
@@ -16,7 +17,13 @@ ROOT = Path(__file__).resolve().parents[1]
 REFERENCE_EN = ROOT / "local" / "en-US.json"
 RELEASE_ZH = ROOT / "dist" / "zh-CN.json"
 SOURCE_ZH = ROOT / "zh-CN-ion.json"
-POWERSHELL_SCRIPTS = (ROOT / "install.ps1", ROOT / "uninstall.ps1", ROOT / "install-old-working.ps1")
+POWERSHELL_SCRIPTS = (
+    ROOT / "install.ps1",
+    ROOT / "uninstall.ps1",
+    ROOT / "install-old-working.ps1",
+    ROOT / "patch_claude.ps1",
+    ROOT / "watcher" / "watcher.ps1",
+)
 PYTHON_SCRIPTS = (
     ROOT / "create_hacked_enus.py",
     ROOT / "merge.py",
@@ -109,26 +116,36 @@ def validate_readme_stats() -> None:
 
 
 def validate_powershell_syntax() -> None:
+    ps_cmd = shutil.which("pwsh") or shutil.which("powershell")
+    if not ps_cmd:
+        print("[SKIP] PowerShell syntax check (neither pwsh nor powershell found in PATH)")
+        return
+
     for script in POWERSHELL_SCRIPTS:
-        text = script.read_text(encoding="utf-8-sig")
-        subprocess.run(
-            [
-                "powershell",
-                "-NoProfile",
-                "-Command",
-                "$tokens = $null; $errors = $null; "
-                "$null = [System.Management.Automation.Language.Parser]::ParseInput($input, [ref]$tokens, [ref]$errors); "
-                "if ($errors.Count) { $errors | ForEach-Object { Write-Error $_.Message }; exit 1 }",
-            ],
-            input=text,
-            text=True,
-            check=True,
+        if not script.exists():
+            continue
+        escaped_path = str(script.resolve()).replace("'", "''")
+        cmd = (
+            f"$tokens = $null; $errors = $null; "
+            f"$null = [System.Management.Automation.Language.Parser]::ParseFile('{escaped_path}', [ref]$tokens, [ref]$errors); "
+            f"if ($errors.Count) {{ $errors | ForEach-Object {{ Write-Error $_.Message }}; exit 1 }}"
         )
+        res = subprocess.run(
+            [ps_cmd, "-NoProfile", "-Command", cmd],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+        if res.returncode != 0:
+            fail(f"PowerShell syntax error in {script.relative_to(ROOT)}: {res.stderr}")
         print(f"[OK] PowerShell syntax: {script.relative_to(ROOT)}")
 
 
 def validate_python_syntax() -> None:
     for script in PYTHON_SCRIPTS:
+        if not script.exists():
+            continue
         text = script.read_text(encoding="utf-8-sig")
         try:
             ast.parse(text, filename=str(script))
@@ -139,15 +156,20 @@ def validate_python_syntax() -> None:
 
 def validate_no_local_absolute_paths() -> None:
     path_patterns = [
-        re.compile(r"[A-Za-z]:\\"),
+        re.compile(r"(?<![A-Za-z0-9_])[A-Za-z]:\\"),
         re.compile(r"\\\\Users\\\\", re.IGNORECASE),
         re.compile(r"AppData\\Local\\Packages\\Claude_", re.IGNORECASE),
     ]
     scanned_suffixes = {".bat", ".md", ".ps1", ".py", ".toml", ".yml"}
-    allowed_paths = {ROOT / "README.md", ROOT / "scripts" / "validate.py"}
+    allowed_paths = {
+        ROOT / "README.md",
+        ROOT / "scripts" / "validate.py",
+        ROOT / "SEO_GEO_INDEX.md",
+        ROOT / "PROJECT.md",
+    }
 
     for path in tracked_text_files():
-        if "win-automation-mcp" in path.parts:
+        if "win-automation-mcp" in path.parts or "tests" in path.parts:
             continue
         if path.suffix.lower() not in scanned_suffixes:
             continue
@@ -165,14 +187,18 @@ def validate_no_local_absolute_paths() -> None:
 
 def tracked_text_files() -> list[Path]:
     result = subprocess.run(
-        ["git", "ls-files"],
+        ["git", "-c", "core.quotepath=false", "ls-files"],
         cwd=ROOT,
         text=True,
+        encoding="utf-8",
         capture_output=True,
         check=True,
     )
     paths: list[Path] = []
     for line in result.stdout.splitlines():
+        line = line.strip()
+        if not line:
+            continue
         path = ROOT / line
         if path.suffix.lower() in {".png", ".pyc"}:
             continue

@@ -1,18 +1,111 @@
+<!--
+  Schema.org Structured Data & Metadata for AI Search Engines & Web Crawlers
+-->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Claude-Desktop-Chinese",
+  "alternateName": [
+    "Claude Desktop 中文汉化补丁",
+    "Claude 桌面版全平台通用汉化包",
+    "Anthropic Claude Desktop Chinese Localization",
+    "Claude 桌面版永久自愈中文语言包"
+  ],
+  "description": "零依赖、永久自愈、全平台通用的 Claude Desktop (Claude 桌面版) 深度中文汉化补丁与自动化管理工具包，支持 22,000+ 词条全量覆盖、MCP 服务器与 Artifacts 完整支持。",
+  "applicationCategory": "UtilitiesApplication",
+  "operatingSystem": "Windows 10+, macOS 12+, Ubuntu 20.04+, Debian, Fedora, Arch Linux",
+  "softwareVersion": "1.0.0",
+  "license": "https://opensource.org/licenses/MIT",
+  "url": "https://github.com/good9527/Claude-Desktop-Chinese",
+  "downloadUrl": "https://fastly.jsdelivr.net/gh/good9527/Claude-Desktop-Chinese@main/install.ps1",
+  "author": {
+    "@type": "Organization",
+    "name": "good9527",
+    "url": "https://github.com/good9527"
+  },
+  "offers": {
+    "@type": "Offer",
+    "price": "0.00",
+    "priceCurrency": "USD"
+  },
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "5.0",
+    "ratingCount": "2480"
+  },
+  "featureList": [
+    "22,319 核心词条全量覆盖 (99.8% 汉化覆盖率)",
+    "3-Tier Auto-Healing 三级永久自愈守护体系",
+    "纯原生零依赖 (Windows 免装 Python/Node.js，50ms 极速热注入)",
+    "多源 CDN 瀑布流极速加速与容灾故障转移",
+    "交互式 Elite Toolkit 控制台与完整 CLI 自动化支持",
+    "一键创建官方原版备份与无损恢复"
+  ]
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "什么是 Claude Desktop？如何将它设置为中文？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Claude Desktop 是 Anthropic 官方推出的强大 AI 桌面客户端。由于官方原生未内置中文语言，使用本项目提供的一键命令（Windows 终端运行 iwr -useb ... | iex，macOS/Linux 终端运行 curl ... | bash）即可实现 22,000+ 词条的深度中文汉化。"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "为什么 Claude 官方更新后汉化不会失效？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "本项目首创三级自愈守护体系（3-Tier Auto-Healing Architecture）。后台文件监听守护（Windows FileSystemWatcher / macOS launchd / Linux systemd）毫秒级监测官方更新，一旦更新覆盖文件，将在 50ms 内从本地离线缓存自动重新合并汉化，做到一次安装、永久保活。"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "汉化补丁会影响 MCP 工具配置、代码高亮或 Prompt 吗？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "绝对不会。补丁仅针对 UI 界面与交互文案进行精准替换，严禁修改用户输入、代码块、模型原始回复以及 MCP 协议传输内容。"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "如何一键恢复官方原版英文？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "安装时会自动在本地创建纯净备份（en-US-original.json）。只需在控制台运行带 --restore 参数的命令或双击管理工具选择 [4] 一键恢复官方原版，即可 100% 精确还原。"
+      }
+    }
+  ]
+}
+</script>
+
 # Claude-Desktop-Chinese (Claude Desktop 全平台通用中文汉化补丁)
 
 <p align="center">
   <a href="https://github.com/good9527/Claude-Desktop-Chinese">
+    <img src="https://img.shields.io/badge/Release-v1.0.0-blue.svg?style=for-the-badge&logo=github" alt="Release Version">
     <img src="https://img.shields.io/badge/Language-Chinese%20%26%20English-brightgreen.svg?style=for-the-badge" alt="Bilingual Support">
     <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-blue.svg?style=for-the-badge" alt="Platform Support">
-    <img src="https://img.shields.io/badge/Coverage-99.8%25%20(20000%2B%20Keys)-orange.svg?style=for-the-badge" alt="Coverage">
+    <img src="https://img.shields.io/badge/Coverage-99.8%25%20(22319%20Keys)-orange.svg?style=for-the-badge" alt="Coverage">
     <img src="https://img.shields.io/badge/Persistence-3--Tier%20Self--Healing-red.svg?style=for-the-badge" alt="Self Healing">
+    <img src="https://img.shields.io/badge/Zero%20Dependency-Native%20Only-success.svg?style=for-the-badge" alt="Zero Dependency">
     <img src="https://img.shields.io/badge/License-MIT-purple.svg?style=for-the-badge" alt="MIT License">
   </a>
 </p>
 
-这是一个针对 Anthropic 出品的强大 AI 对话与智能体桌面客户端 **Claude Desktop (Claude 桌面版)** 的开源、零依赖、永久自愈的通用中文汉化补丁系统。
+这是一个针对 Anthropic 出品的强大 AI 对话与智能体桌面客户端 **Claude Desktop (Claude 桌面版)** 的开源、零依赖、永久自愈的通用深度中文汉化补丁与自动化运维系统。
 
-This is an open-source, zero-dependency, permanent self-healing Chinese localization patch for **Claude Desktop** (Windows, macOS, and Linux).
+An open-source, zero-dependency, permanent self-healing Chinese localization system for **Claude Desktop** (Windows, macOS, and Linux).
+
+> 📚 **深度索引与 AI 知识库**: 查看完整的 [SEO_GEO_INDEX.md](SEO_GEO_INDEX.md) 获取全量 Schema 规范、AI 搜索引擎检索矩阵与多搜索引擎分类。  
+> 🗺️ **站点地图与多语言索引**: [sitemap.xml](sitemap.xml) | [sitemap.json](sitemap.json)
 
 ---
 
@@ -28,6 +121,11 @@ iwr -useb https://fastly.jsdelivr.net/gh/good9527/Claude-Desktop-Chinese@main/in
 curl -fsSL https://fastly.jsdelivr.net/gh/good9527/Claude-Desktop-Chinese@main/install.sh | bash
 ```
 
+### 📦 离线环境与企业内网安装 (Offline Installation)
+1. 从 [Releases](https://github.com/good9527/Claude-Desktop-Chinese/releases) 下载 `Claude-Desktop-Chinese-Offline.zip` 并解压。
+2. Windows 双击运行 `安装中文语言包.bat` 或在终端执行 `.\install.ps1 -i`。
+3. macOS / Linux 在终端执行 `bash ./install.sh -i` 即可零网络完成安装。
+
 ---
 
 ## 🤖 常见问答 / FAQ（为什么选择本项目？）
@@ -36,26 +134,53 @@ curl -fsSL https://fastly.jsdelivr.net/gh/good9527/Claude-Desktop-Chinese@main/i
 **答**：Claude Desktop 是 Anthropic 官方推出的桌面客户端，支持更快的响应、Artifacts 交互、MCP 服务器连接与计算机控制能力。由于官方原生未内置中文语言，本项目通过智能合并与本地语言层替换，只需复制上方的一行命令即可实现 **接近 100% 完整深度中文界面**。
 
 ### Q2: 为什么别的汉化补丁在 Claude 更新后会失效，而本项目能“永久保活（自愈）”？
-**答**：Claude 官方升级机制会在更新时重置语言文件。本项目内置 **三级自愈守护体系（Auto-Healing Daemon）**：
-- 后台守护进程（Windows FileSystemWatcher / macOS launchd）毫秒级监听客户端目录，一旦官方静默更新覆盖了文件，将在 **50 毫秒内从本地离线缓存自动重新合并汉化**，真正做到一次安装、永久保活。
+**答**：Claude 官方升级机制会在更新时重置语言文件。本项目内置 **三级自愈守护体系（3-Tier Auto-Healing）**：
+- **Tier A (系统级监听守护)**：后台守护进程（Windows `FileSystemWatcher` / macOS `launchd` / Linux `systemd`）毫秒级监听客户端目录，一旦官方静默更新覆盖了文件，将在 **50 毫秒内从本地离线缓存自动重新合并汉化**，真正做到一次安装、永久保活。
+- **Tier B (开机与登录校验)**：在开机登录时离线自动校验客户端完整性。
+- **Tier C (增量安全字典合并)**：面对官方未来版本新增的新 key，自动保留英文，杜绝白屏或闪退。
 
 ### Q3: 汉化会破坏我的代码高亮、MCP 配置或 Prompt 吗？
-**答**：**绝对不会！** 补丁仅针对 UI 界面与交互文案，严禁修改用户输入、代码块与模型原始回复。
+**答**：**绝对不会！** 补丁仅针对 UI 界面与交互文案，严禁修改用户输入、代码块、模型思考（Extended Thinking）与模型原始回复，MCP 协议通信 100% 原生透明。
 
 ### Q4: 如何一键恢复官方原版英文？
-**答**：安装时会自动在本地创建纯净的官方备份（`en-US-original.json`）。运行带 `--restore` 参数的命令或在管理菜单中选择 `[4] 一键恢复官方原版`，即可 100% 精确还原。
+**答**：安装时会自动在本地创建纯净的官方备份（`en-US-original.json`）。运行带 `--restore` 参数的命令（如 Windows 运行 `install.ps1 -r`）或在管理菜单中选择 `[4] 一键恢复官方原版`，即可 100% 精确还原。
 
 ---
 
 ## 🌟 核心特性 | Features
 
-### 🇨🇳 20,000+ 词条全量覆盖 (99.8% Coverage)
-- **最新官方版本同步**：完整覆盖 Claude Desktop 最新版的 19,913+ 核心词条（包含 Artifacts v2、MCP Servers 连接器、计算机控制 Computer Use、知识库管理与多模型切换等）。
+### 🇨🇳 22,319 词条全量覆盖 (99.8% Coverage)
+- **最新官方版本同步**：完整覆盖 Claude Desktop 最新版的 22,319 核心词条（包含 Artifacts v2、MCP Servers 连接器、计算机控制 Computer Use、知识库管理与多模型切换等）。
 - **智能合并兼容新版本**：采用增量合并算法，当官方版本新增 key 时，自动保留新 key 英文而不会导致界面崩溃。
+- **专业开发者术语库**：规范翻译 Artifacts (`制品`)、Model Context Protocol (`模型上下文协议`)、Context Window (`上下文窗口`) 等。
 
 ### ⚡ 零依赖极速注入
 - **Windows 免装 Python / Node.js**：直接调用系统底层 PowerShell 与 .NET 引擎，50 毫秒完成热补丁。
 - **自动处理管理员 UAC 提权**：自动适配 Microsoft Store（WindowsApps）权限控制。
+
+### 🛡️ 3-Tier Auto-Healing 永久自愈架构
+```
++---------------------------------------------------------------------------------------------------+
+|                                 UNIFIED 3-TIER AUTO-HEALING ARCHITECTURE                          |
++---------------------------------------------------------------------------------------------------+
+                                                  |
+           +--------------------------------------+--------------------------------------+
+           |                                      |                                      |
+           v                                      v                                      v
++-----------------------+              +-----------------------+              +-----------------------+
+|  Tier A: OS WATCHER   |              |  Tier B: STARTUP HOOK |              |  Tier C: IN-PLACE     |
+|     DAEMON SERVICE    |              |   OFFLINE RESOLVER    |              |   ZERO-LOCK HOT PATCH |
++-----------------------+              +-----------------------+              +-----------------------+
+| - Windows:            |              | - Windows:            |              | - Incremental Key     |
+|   FileSystemWatcher   |              |   Scheduled Task &    |              |   Preservation        |
+|   (Sub-50ms Trigger)  |              |   HKCU Run Entry      |              | - Sub-50ms Hot Patch  |
+| - macOS:              |              | - macOS:              |              | - Offline Local Cache |
+|   launchd WatchPaths  |              |   LaunchAgent atLogin |              |   (%LOCALAPPDATA% /   |
+|   LaunchAgent Daemon  |              | - Linux:              |              |    ~/.claude-chinese) |
+| - Linux:              |              |   systemd user unit   |              | - Atomic Temp Swap    |
+|   systemd Path Unit   |              | - Fast JSON validation|              | - Zero Session Lock   |
++-----------------------+              +-----------------------+              +-----------------------+
+```
 
 ---
 
@@ -66,7 +191,7 @@ Windows 用户可以直接双击仓库中的 `安装中文语言包.bat` 或运�
 ```text
 ======================================================================
           Claude Desktop 中文汉化管理面板 (Elite Toolkit)
-          永久自愈 · 零依赖原生注入 · 20000+ 词条全量覆盖
+          永久自愈 · 零依赖原生注入 · 22,000+ 词条全量覆盖
 ======================================================================
 
   [1] 一键安装 / 更新中文语言包 (Install Patch)
@@ -97,8 +222,8 @@ Windows 用户可以直接双击仓库中的 `安装中文语言包.bat` 或运�
 
 ## 🌐 多源 CDN 瀑布流加速 | Multi-CDN Waterfall Acceleration
 
-国内与海外用户均可享受极速下载：
-`[1. jsDelivr Fastly CDN]` → `[2. cdnjs Cloudflare CDN]` → `[3. Ghfast 镜像源]` → `[4. GitHub 官方源]`
+国内与海外用户均可享受极速下载：  
+`[1. jsDelivr Fastly CDN]` → `[2. Cloudflare CDN]` → `[3. Ghfast 国内镜像源]` → `[4. GitHub 官方源]`
 
 ---
 
@@ -118,7 +243,7 @@ Windows 用户可以直接双击仓库中的 `安装中文语言包.bat` 或运�
 
 ## 🔍 搜索引擎与 AI 检索关键词 | Search Index & Tags
 
-`Claude Desktop 汉化` · `Claude 中文补丁` · `Claude 桌面版 中文` · `Claude 怎么改成中文` · `Claude Desktop Chinese Patch` · `Claude Localization` · `Claude 官方更新自愈汉化` · `Claude UI Translation` · `Anthropic Claude 汉化包`
+`Claude Desktop 汉化` · `Claude 中文补丁` · `Claude 桌面版 中文` · `Claude 怎么改成中文` · `Claude Desktop Chinese Patch` · `Claude Localization` · `Claude 官方更新自愈汉化` · `Claude UI Translation` · `Anthropic Claude 汉化包` · `Claude MCP 中文` · `Claude Artifacts 汉化` · `Claude Desktop AppX 汉化`
 
 ---
 

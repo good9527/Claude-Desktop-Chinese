@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <!-- Homepage & Main Documentation -->
+  <url>
+    <loc>https://github.com/good9527/Claude-Desktop-Chinese</loc>
+    <lastmod>2026-09-02T14:55:00+08:00</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://github.com/good9527/Claude-Desktop-Chinese" />
+    <xhtml:link rel="alternate" hreflang="zh-TW" href="https://github.com/good9527/Claude-Desktop-Chinese#traditional-chinese" />
+    <xhtml:link rel="alternate" hreflang="zh-HK" href="https://github.com/good9527/Claude-Desktop-Chinese#traditional-chinese" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://github.com/good9527/Claude-Desktop-Chinese#english-documentation" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://github.com/good9527/Claude-Desktop-Chinese" />
+  </url>
+
+  <!-- Deep AI Search & GEO Index Documentation -->
+  <url>
+    <loc>https://github.com/good9527/Claude-Desktop-Chinese/blob/main/SEO_GEO_INDEX.md</loc>
+    <lastmod>2026-09-02T14:55:00+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://github.com/good9527/Claude-Desktop-Chinese/blob/main/SEO_GEO_INDEX.md" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://github.com/good9527/Claude-Desktop-Chinese/blob/main/SEO_GEO_INDEX.md#english" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://github.com/good9527/Claude-Desktop-Chinese/blob/main/SEO_GEO_INDEX.md" />
+  </url>
+
+  <!-- Windows 1-Click Installer Script CDN Endpoint -->
+  <url>
+    <loc>https://fastly.jsdelivr.net/gh/good9527/Claude-Desktop-Chinese@main/install.ps1</loc>
+    <lastmod>2026-09-02T14:55:00+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- macOS & Linux 1-Click Installer Script CDN Endpoint -->
+  <url>
+    <loc>https://fastly.jsdelivr.net/gh/good9527/Claude-Desktop-Chinese@main/install.sh</loc>
+    <lastmod>2026-09-02T14:55:00+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Full Chinese Localization Dictionary Payload -->
+  <url>
+    <loc>https://fastly.jsdelivr.net/gh/good9527/Claude-Desktop-Chinese@main/dist/zh-CN.json</loc>
+    <lastmod>2026-09-02T14:55:00+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Releases & Offline Binary Distribution -->
+  <url>
+    <loc>https://github.com/good9527/Claude-Desktop-Chinese/releases</loc>
+    <lastmod>2026-09-02T14:55:00+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+</urlset>

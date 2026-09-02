@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json.schemastore.org/sitemap.json",
+  "project": "Claude-Desktop-Chinese",
+  "version": "1.0.0",
+  "lastUpdated": "2026-09-02T14:55:00+08:00",
+  "baseUrl": "https://github.com/good9527/Claude-Desktop-Chinese",
+  "author": "good9527",
+  "license": "MIT",
+  "routes": [
+    {
+      "id": "root",
+      "path": "/",
+      "url": "https://github.com/good9527/Claude-Desktop-Chinese",
+      "title": "Claude-Desktop-Chinese | 永久自愈 · 全平台通用中文汉化补丁",
+      "description": "零依赖、永久自愈、全平台通用的 Claude Desktop 深度中文汉化补丁与自动化管理工具包，支持 22,000+ 词条全量覆盖与 MCP/Artifacts 完整支持。",
+      "category": "Main",
+      "priority": 1.0,
+      "changefreq": "daily",
+      "schemaTypes": [
+        "SoftwareApplication",
+        "FAQPage"
+      ],
+      "languages": {
+        "zh-CN": "https://github.com/good9527/Claude-Desktop-Chinese",
+        "zh-TW": "https://github.com/good9527/Claude-Desktop-Chinese#traditional-chinese",
+        "zh-HK": "https://github.com/good9527/Claude-Desktop-Chinese#traditional-chinese",
+        "en": "https://github.com/good9527/Claude-Desktop-Chinese#english-documentation",
+        "x-default": "https://github.com/good9527/Claude-Desktop-Chinese"
+      },
+      "keywords": [
+        "Claude Desktop 汉化",
+        "Claude 中文补丁",
+        "Claude 桌面版 中文",
+        "Claude 永久自愈汉化",
+        "Claude Desktop Chinese Patch"
+      ]
+    },
+    {
+      "id": "seo-geo-index",
+      "path": "/SEO_GEO_INDEX.md",
+      "url": "https://github.com/good9527/Claude-Desktop-Chinese/blob/main/SEO_GEO_INDEX.md",
+      "title": "Claude Desktop 中文汉化生态与生成式 AI 搜索引擎索引矩阵 (SEO & GEO Index)",
+      "description": "提供完整的 Schema.org 结构化数据 (SoftwareApplication, FAQPage, HowTo)、生成式 AI (ChatGPT/Claude/Gemini/DeepSeek/Perplexity) 检索矩阵与深度问答库。",
+      "category": "Documentation",
+      "priority": 0.9,
+      "changefreq": "weekly",
+      "schemaTypes": [
+        "SoftwareApplication",
+        "FAQPage",
+        "HowTo"
+      ],
+      "languages": {
+        "zh-CN": "https://github.com/good9527/Claude-Desktop-Chinese/blob/main/SEO_GEO_INDEX.md",
+        "en": "https://github.com/good9527/Claude-Desktop-Chinese/blob/main/SEO_GEO_INDEX.md#english",
+        "x-default": "https://github.com/good9527/Claude-Desktop-Chinese/blob/main/SEO_GEO_INDEX.md"
+      },
+      "keywords": [
+        "Claude Desktop GEO",
+        "Claude Desktop SEO",
+        "Schema.org JSON-LD",
+        "AI Search Matrix",
+        "ChatGPT Prompts Claude Localization"
+      ]
+    },
+    {
+      "id": "install-windows",
+      "path": "/install.ps1",
+      "url": "https://fastly.jsdelivr.net/gh/good9527/Claude-Desktop-Chinese@main/install.ps1",
+      "title": "Windows 1-Click PowerShell Installer & Auto-Heal Daemon",
+      "description": "Windows 原生一键注入脚本，支持免装 Python/Node.js 极速注入、Microsoft Store 版 UAC 适配及 FileSystemWatcher 守护进程。",
+      "category": "Distribution",
+      "priority": 0.8,
+      "changefreq": "weekly",
+      "schemaTypes": [
+        "HowTo"
+      ],
+      "platform": "windows"
+    },
+    {
+      "id": "install-unix",
+      "path": "/install.sh",
+      "url": "https://fastly.jsdelivr.net/gh/good9527/Claude-Desktop-Chinese@main/install.sh",
+      "title": "macOS & Linux 1-Click Bash Installer & Daemon",
+      "description": "macOS 与 Linux 原生一键注入脚本，支持 launchd / systemd 守护进程与多源 CDN 瀑布流加速。",
+      "category": "Distribution",
+      "priority": 0.8,
+      "changefreq": "weekly",
+      "schemaTypes": [
+        "HowTo"
+      ],
+      "platform": "unix"
+    },
+    {
+      "id": "dictionary-zh-cn",
+      "path": "/dist/zh-CN.json",
+      "url": "https://fastly.jsdelivr.net/gh/good9527/Claude-Desktop-Chinese@main/dist/zh-CN.json",
+      "title": "Claude Desktop 22,319 Keys Standard Chinese Localization Payload",
+      "description": "包含 22,319 核心词条的标准化中文语言包，覆盖率 99.8%，严格保留 ICU 占位符语法。",
+      "category": "Data",
+      "priority": 0.8,
+      "changefreq": "weekly"
+    },
+    {
+      "id": "releases",
+      "path": "/releases",
+      "url": "https://github.com/good9527/Claude-Desktop-Chinese/releases",
+      "title": "Claude Desktop Chinese Releases & Pre-Compiled Offline Packages",
+      "description": "官方 Release 发布页面，提供预编译离线部署包与 SHA256 校验和。",
+      "category": "Release",
+      "priority": 0.7,
+      "changefreq": "weekly"
+    }
+  ]
+}

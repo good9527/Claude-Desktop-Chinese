@@ -1,0 +1,168 @@
+name: CI — Validate, Test & Release
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*.*.*"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ─────────────────────────────────────────────────────────────
+  # Job 1: Dictionary & Script Validation (Windows)
+  # ─────────────────────────────────────────────────────────────
+  validate-windows:
+    name: Validate (Windows)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate JSON dictionary integrity
+        shell: python
+        run: |
+          import json, sys, re
+          with open("dist/zh-CN.json", "r", encoding="utf-8") as f:
+              data = json.load(f)
+          assert len(data) >= 15000, f"Dictionary too small: {len(data)} keys"
+          corrupted = [k for k, v in data.items() if "\ufffd" in str(v)]
+          assert not corrupted, f"Found {len(corrupted)} corrupted entries"
+          print(f"[OK] Dictionary: {len(data)} keys, 0 corrupted entries")
+
+      - name: Validate installer scripts exist
+        shell: python
+        run: |
+          import os
+          required = ["install.ps1", "install.sh", "patch_claude.ps1", "watcher/watcher.ps1"]
+          for f in required:
+              assert os.path.exists(f), f"Missing: {f}"
+          print(f"[OK] All {len(required)} installer scripts present")
+
+      - name: Run full test suite
+        shell: python
+        run: python tests/test_runner.py
+
+      - name: Validate legacy scripts
+        shell: powershell
+        run: python scripts/validate.py
+
+  # ─────────────────────────────────────────────────────────────
+  # Job 2: Cross-platform validation (Ubuntu / macOS)
+  # ─────────────────────────────────────────────────────────────
+  validate-unix:
+    name: Validate (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate JSON dictionary
+        run: |
+          python3 -c "
+          import json, sys
+          with open('dist/zh-CN.json', 'r', encoding='utf-8') as f:
+              d = json.load(f)
+          assert len(d) >= 15000, f'Only {len(d)} keys!'
+          corrupted = [k for k,v in d.items() if '\ufffd' in str(v)]
+          assert not corrupted, f'{len(corrupted)} corrupted'
+          print(f'[OK] {len(d)} keys, 0 corrupted')
+          "
+
+      - name: Validate install.sh is executable
+        run: |
+          chmod +x install.sh
+          bash -n install.sh && echo "[OK] install.sh syntax OK"
+
+  # ─────────────────────────────────────────────────────────────
+  # Job 3: Automated Release (on version tags only)
+  # ─────────────────────────────────────────────────────────────
+  release:
+    name: Create GitHub Release
+    needs: [validate-windows, validate-unix]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build offline package
+        run: |
+          python3 -c "
+          import json, zipfile, os, shutil
+          
+          tag = os.environ.get('GITHUB_REF_NAME', 'dev')
+          pkg_name = f'Claude-Desktop-Chinese-{tag}'
+          
+          with open('dist/zh-CN.json', 'r', encoding='utf-8') as f:
+              d = json.load(f)
+          keys = len(d)
+          
+          # Build zip
+          with zipfile.ZipFile(f'{pkg_name}.zip', 'w', zipfile.ZIP_DEFLATED) as zf:
+              for arc_name, src in [
+                  ('dist/zh-CN.json', 'dist/zh-CN.json'),
+                  ('install.ps1', 'install.ps1'),
+                  ('install.sh', 'install.sh'),
+                  ('patch_claude.ps1', 'patch_claude.ps1'),
+                  ('watcher/watcher.ps1', 'watcher/watcher.ps1'),
+              ]:
+                  if os.path.exists(src):
+                      zf.write(src, arc_name)
+          
+          print(f'[OK] Built {pkg_name}.zip with {keys} translation keys')
+          "
+        env:
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+
+      - name: Get key count
+        id: keycount
+        run: |
+          COUNT=$(python3 -c "import json; d=json.load(open('dist/zh-CN.json','r',encoding='utf-8')); print(len(d))")
+          echo "count=$COUNT" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: Claude-Desktop-Chinese-*.zip
+          generate_release_notes: true
+          body: |
+            ## 📦 Claude Desktop 中文汉化补丁 ${{ github.ref_name }}
+
+            ### 亮点
+            - ✅ **${{ steps.keycount.outputs.count }}+ 条精准翻译词条** — 完整覆盖官方最新版
+            - ✅ 支持 Windows Store 版、Windows 独立版、macOS、Linux
+            - ✅ 三级自愈守护（官方自动更新后毫秒级恢复汉化）
+            - ✅ 零依赖 — 无需安装 Node.js / Python
+
+            ### 一键安装
+            **Windows:**
+            ```powershell
+            iwr -useb https://fastly.jsdelivr.net/gh/good9527/Claude-Desktop-Chinese@main/install.ps1 | iex
+            ```
+            **macOS / Linux:**
+            ```bash
+            curl -fsSL https://fastly.jsdelivr.net/gh/good9527/Claude-Desktop-Chinese@main/install.sh | bash
+            ```
+
+            ### 离线安装
+            下载 `Claude-Desktop-Chinese-${{ github.ref_name }}.zip` → 解压 → 双击 `patch_claude.ps1` 或运行 `bash install.sh`
