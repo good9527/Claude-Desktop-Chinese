@@ -12,6 +12,12 @@
   </a>
 </p>
 
+> [!TIP]
+> 🔗 **开源生态矩阵联动**：
+> 如果你同时在日常开发中使用 Google Antigravity 智能体编程助手，欢迎体验我们的姐妹项目：
+> 👉 [**good9527/Antigravity-Chinese-Patch** (Google Antigravity 全平台通用中文汉化补丁 · 零依赖原生热注入 · 官方更新自动保活)](https://github.com/good9527/Antigravity-Chinese-Patch)
+
+
 这是一个针对 Anthropic 出品的强大 AI 对话与智能体桌面客户端 **Claude Desktop (Claude 桌面版)** 的开源、零依赖、永久自愈的通用深度中文汉化补丁与自动化运维系统。
 
 An open-source, zero-dependency, permanent self-healing Chinese localization system for **Claude Desktop** (Windows, macOS, and Linux).

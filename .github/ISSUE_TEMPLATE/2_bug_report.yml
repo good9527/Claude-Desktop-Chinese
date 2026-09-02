@@ -1,0 +1,37 @@
+name: 🐛 运行报错或汉化失效排查 (Bug Report)
+description: 安装过程中报错、或者官方更新后自愈未生效
+title: "[Bug]: "
+labels: ["bug", "help wanted"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请详细描述遇到的异常现象，以便我们定位和修复。
+  - type: dropdown
+    id: os
+    attributes:
+      label: 操作系统 (Operating System)
+      options:
+        - Windows 11
+        - Windows 10
+        - macOS (Apple Silicon M系列)
+        - macOS (Intel)
+        - Linux (Ubuntu/Debian/Arch)
+        - 其他
+    validations:
+      required: true
+  - type: textarea
+    id: symptoms
+    attributes:
+      label: 异常现象描述 (What happened?)
+      description: 发生了什么？例如：运行命令提示报错、或者重启后恢复英文
+    validations:
+      required: true
+  - type: textarea
+    id: error_log
+    attributes:
+      label: 控制台报错日志 (Error Output / Logs)
+      description: 请粘贴终端完整的报错信息
+      render: shell
+    validations:
+      required: false

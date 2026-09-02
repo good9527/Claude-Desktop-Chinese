@@ -1,0 +1,38 @@
+name: 🌐 界面未翻译或翻译优化建议 (Translation Feedback)
+description: 发现某处界面仍为英文、或者某个中文词条有更地道的翻译建议
+title: "[翻译建议]: "
+labels: ["translation", "enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢你帮助我们改进汉化质量！请尽可能详细地提供未翻译文案的具体位置和截图。
+  - type: input
+    id: location
+    attributes:
+      label: 出现位置 (Where in the UI)
+      description: 例如：设置 -> 常规、侧边栏右上角、或者某个特定弹窗
+      placeholder: e.g. 设置 -> 常规设置
+    validations:
+      required: true
+  - type: textarea
+    id: original_text
+    attributes:
+      label: 原英文文案 (Original English Text)
+      placeholder: e.g. Open Preferences
+    validations:
+      required: true
+  - type: textarea
+    id: suggested_text
+    attributes:
+      label: 建议的中文翻译 (Suggested Translation)
+      placeholder: e.g. 打开偏好设置
+    validations:
+      required: false
+  - type: input
+    id: version
+    attributes:
+      label: 软件版本与客户端类型 (App Version & OS)
+      placeholder: e.g. Windows 11 / 最新官方版本
+    validations:
+      required: false
