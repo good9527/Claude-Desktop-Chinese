@@ -59,103 +59,18 @@ curl -fsSL https://fastly.jsdelivr.net/gh/good9527/Claude-Desktop-Chinese@main/i
 
 ---
 
-## 🌟 核心特性 | Features
-
-### 🇨🇳 22,319 词条全量覆盖 (99.8% Coverage)
-- **最新官方版本同步**：完整覆盖 Claude Desktop 最新版的 22,319 核心词条（包含 Artifacts v2、MCP Servers 连接器、计算机控制 Computer Use、知识库管理与多模型切换等）。
-- **智能合并兼容新版本**：采用增量合并算法，当官方版本新增 key 时，自动保留新 key 英文而不会导致界面崩溃。
-- **专业开发者术语库**：规范翻译 Artifacts (`制品`)、Model Context Protocol (`模型上下文协议`)、Context Window (`上下文窗口`) 等。
-
-### ⚡ 零依赖极速注入
-- **Windows 免装 Python / Node.js**：直接调用系统底层 PowerShell 与 .NET 引擎，50 毫秒完成热补丁。
-- **自动处理管理员 UAC 提权**：自动适配 Microsoft Store（WindowsApps）权限控制。
-
-### 🛡️ 3-Tier Auto-Healing 永久自愈架构
-```
-+---------------------------------------------------------------------------------------------------+
-|                                 UNIFIED 3-TIER AUTO-HEALING ARCHITECTURE                          |
-+---------------------------------------------------------------------------------------------------+
-                                                  |
-           +--------------------------------------+--------------------------------------+
-           |                                      |                                      |
-           v                                      v                                      v
-+-----------------------+              +-----------------------+              +-----------------------+
-|  Tier A: OS WATCHER   |              |  Tier B: STARTUP HOOK |              |  Tier C: IN-PLACE     |
-|     DAEMON SERVICE    |              |   OFFLINE RESOLVER    |              |   ZERO-LOCK HOT PATCH |
-+-----------------------+              +-----------------------+              +-----------------------+
-| - Windows:            |              | - Windows:            |              | - Incremental Key     |
-|   FileSystemWatcher   |              |   Scheduled Task &    |              |   Preservation        |
-|   (Sub-50ms Trigger)  |              |   HKCU Run Entry      |              | - Sub-50ms Hot Patch  |
-| - macOS:              |              | - macOS:              |              | - Offline Local Cache |
-|   launchd WatchPaths  |              |   LaunchAgent atLogin |              |   (%LOCALAPPDATA% /   |
-|   LaunchAgent Daemon  |              | - Linux:              |              |    ~/.claude-chinese) |
-| - Linux:              |              |   systemd user unit   |              | - Atomic Temp Swap    |
-|   systemd Path Unit   |              | - Fast JSON validation|              | - Zero Session Lock   |
-+-----------------------+              +-----------------------+              +-----------------------+
-```
-
----
-
-## 🎛️ 本地控制台管理面板 | Interactive Console Menu
-
-Windows 用户可以直接双击仓库中的 `安装中文语言包.bat` 或运行 `patch_claude.ps1`：
-
-```text
-======================================================================
-          Claude Desktop 中文汉化管理面板 (Elite Toolkit)
-          永久自愈 · 零依赖原生注入 · 22,000+ 词条全量覆盖
-======================================================================
-
-  [1] 一键安装 / 更新中文语言包 (Install Patch)
-  [2] 环境与健康状态诊断 (Health Diagnostics)
-  [3] 开启 / 关闭后台自动守护 (Auto-Healing Daemon)
-  [4] 一键恢复官方原版英文 (One-Click Rollback)
-  [5] 退出控制台 (Exit)
-
-======================================================================
-请输入选项 [1-5]:
-```
-
----
-
-## ⚙️ CLI 命令行参数 | CLI Flags
-
-| 参数 / Flag | 缩写 | 说明 / Description |
-|---|---|---|
-| `--install` | `-i` | 执行一键注入安装，创建备份并激活自愈守护 |
-| `--uninstall` | `-u` | 还原官方原版备份，清理离线缓存并注销守护服务 |
-| `--check` | `-c` | 执行环境与健康状态诊断 |
-| `--restore` | `-r` | 一键还原官方原版英文 |
-| `--daemon <enable\|disable\|status>` | - | 配置后台自愈守护状态 |
-| `--quiet` / `--silent` | `-q` | 静默模式，无控制台交互输出 |
-| `--json` | - | 输出标准 JSON 格式诊断数据 |
-
----
-
-## 🌐 多源 CDN 瀑布流加速 | Multi-CDN Waterfall Acceleration
-
-国内与海外用户均可享受极速下载：  
-`[1. jsDelivr Fastly CDN]` → `[2. Cloudflare CDN]` → `[3. Ghfast 国内镜像源]` → `[4. GitHub 官方源]`
-
----
-
-## 🌟 支持项目 | Give a Star
-
-如果本项目对你有帮助，欢迎点击右上角的 ⭐ Star 支持！
+## 📈 Star History
 
 <p align="center">
-  <a href="https://github.com/good9527/Claude-Desktop-Chinese/stargazers">
-    <img src="https://img.shields.io/github/stars/good9527/Claude-Desktop-Chinese?style=for-the-badge&amp;logo=github&amp;color=gold&amp;label=GitHub%20Stars" alt="GitHub Stars">
-  </a>
-  <a href="https://github.com/good9527/Claude-Desktop-Chinese/issues">
-    <img src="https://img.shields.io/github/issues/good9527/Claude-Desktop-Chinese?style=for-the-badge&amp;color=blue&amp;label=Issues" alt="Issues">
-  </a>
-  <a href="https://github.com/good9527/Claude-Desktop-Chinese/releases">
-    <img src="https://img.shields.io/github/v/release/good9527/Claude-Desktop-Chinese?style=for-the-badge&amp;color=green&amp;label=Latest%20Release" alt="Latest Release">
+  <a href="https://star-history.com/#good9527/Claude-Desktop-Chinese&Date">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/good9527/Claude-Desktop-Chinese/main/.github/assets/star-history-dark.svg" />
+      <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/good9527/Claude-Desktop-Chinese/main/.github/assets/star-history-light.svg" />
+      <img alt="Star History Chart" src="https://raw.githubusercontent.com/good9527/Claude-Desktop-Chinese/main/.github/assets/star-history-dark.svg" width="100%" />
+    </picture>
   </a>
 </p>
 
----
 
 ## 🔍 搜索引擎与 AI 检索关键词 | Search Index & Tags
 
