@@ -1,4 +1,5 @@
-# Claude-Desktop-Chinese (Claude Desktop 全平台通用中文汉化补丁)
+# Claude Desktop 汉化补丁 / 中文语言包 (Claude-Desktop-Chinese)
+> **Anthropic Claude 桌面版全平台深度中文汉化包 · 22,000+ 词条全量覆盖 · 官方升级永久自愈守护**
 
 <p align="center">
   <a href="https://github.com/good9527/Claude-Desktop-Chinese">
