@@ -44,11 +44,11 @@ jobs:
           print(f"[OK] All {len(required)} installer scripts present")
 
       - name: Run full test suite
-        shell: python
+        shell: pwsh
         run: python tests/test_runner.py
 
       - name: Validate legacy scripts
-        shell: powershell
+        shell: pwsh
         run: python scripts/validate.py
 
   # ─────────────────────────────────────────────────────────────
