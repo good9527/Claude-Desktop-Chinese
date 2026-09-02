@@ -1,0 +1,108 @@
+name: Update Star History Chart
+
+on:
+  schedule:
+    # Run every day at midnight UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-stars:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Generate Star History SVGs
+        run: |
+          python3 -c "
+          import os, json, urllib.request
+          from datetime import datetime
+
+          repo_name = os.environ['GITHUB_REPOSITORY']
+          token = os.environ['GITHUB_TOKEN']
+          url = f'https://api.github.com/repos/{repo_name}/stargazers?per_page=100'
+          headers = {
+              'Authorization': f'Bearer {token}',
+              'Accept': 'application/vnd.github.v3.star+json',
+              'User-Agent': 'StarFetcher'
+          }
+          req = urllib.request.Request(url, headers=headers)
+          with urllib.request.urlopen(req) as resp:
+              stargazers = json.loads(resp.read().decode())
+
+          def generate_svg(repo, stars, is_dark):
+              theme_str = 'dark' if is_dark else 'light'
+              w, h = 800, 360
+              pl, pr, pt, pb = 65, 45, 45, 55
+              bg = '#0d1117' if is_dark else '#ffffff'
+              border = '#30363d' if is_dark else '#e1e4e8'
+              grid = '#21262d' if is_dark else '#f0f2f5'
+              tc = '#c9d1d9' if is_dark else '#24292f'
+              tm = '#8b949e' if is_dark else '#57606a'
+              lc = '#58a6ff' if is_dark else '#0969da'
+              gs = 'rgba(88, 166, 255, 0.35)' if is_dark else 'rgba(9, 105, 218, 0.25)'
+              ge = 'rgba(88, 166, 255, 0.0)' if is_dark else 'rgba(9, 105, 218, 0.0)'
+
+              pts = []
+              if stars:
+                  dates = [datetime.strptime(x['starred_at'], '%Y-%m-%dT%H:%M:%SZ') for x in stars]
+                  dates.sort()
+                  s_date = dates[0]
+                  e_date = max(dates[-1], datetime.now())
+                  span = max((e_date - s_date).total_seconds(), 86400 * 30)
+                  for i, dt in enumerate(dates):
+                      pts.append(((dt - s_date).total_seconds() / span, i + 1, dt.strftime('%b %d, %Y')))
+                  if (e_date - s_date).total_seconds() / span > pts[-1][0]:
+                      pts.append((1.0, len(dates), datetime.now().strftime('%b %d, %Y')))
+              else:
+                  pts = [(0, 0, ''), (1, 0, '')]
+
+              m_stars = max(len(stars), 10)
+              y_max = 10 if m_stars <= 10 else (20 if m_stars <= 20 else (m_stars // 10 + 1) * 10)
+              y_ticks = [0, y_max // 4, y_max // 2, (y_max * 3) // 4, y_max]
+
+              cw = w - pl - pr
+              ch = h - pt - pb
+              s_pts = [(pl + r * cw, pt + ch - (s / y_max) * ch, s, l) for (r, s, l) in pts]
+              pd = f'M {s_pts[0][0]:.1f} {s_pts[0][1]:.1f}' + ''.join([f' L {x:.1f} {y:.1f}' for (x, y, _, _) in s_pts[1:]])
+              ad = pd + f' L {s_pts[-1][0]:.1f} {pt + ch:.1f} L {s_pts[0][0]:.1f} {pt + ch:.1f} Z'
+
+              svg = f'<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 {w} {h}\" width=\"100%\" height=\"auto\" style=\"background: {bg}; border-radius: 8px; border: 1px solid {border}; font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif;\"><defs><linearGradient id=\"starGrad_{theme_str}\" x1=\"0%\" y1=\"0%\" x2=\"0%\" y2=\"100%\"><stop offset=\"0%\" stop-color=\"{gs}\" /><stop offset=\"100%\" stop-color=\"{ge}\" /></linearGradient></defs><text x=\"{pl}\" y=\"28\" font-size=\"14\" font-weight=\"600\" fill=\"{tc}\">{repo}</text><circle cx=\"{w - pr - 90}\" cy=\"24\" r=\"5\" fill=\"{lc}\" /><text x=\"{w - pr - 80}\" y=\"28\" font-size=\"12\" fill=\"{tm}\">{len(stars)} Stars</text>'
+              for tk in y_ticks:
+                  y = pt + ch - (tk / y_max) * ch
+                  svg += f'<line x1=\"{pl}\" y1=\"{y:.1f}\" x2=\"{w - pr}\" y2=\"{y:.1f}\" stroke=\"{grid}\" stroke-width=\"1\" /><text x=\"{pl - 12}\" y=\"{y + 4:.1f}\" font-size=\"11\" fill=\"{tm}\" text-anchor=\"end\">{tk}</text>'
+              svg += f'<line x1=\"{pl}\" y1=\"{pt + ch}\" x2=\"{w - pr}\" y2=\"{pt + ch}\" stroke=\"{border}\" stroke-width=\"1\" />'
+              if stars:
+                  svg += f'<text x=\"{pl}\" y=\"{h - 20}\" font-size=\"11\" fill=\"{tm}\">{dates[0].strftime(\"%b %Y\")}</text><text x=\"{w - pr}\" y=\"{h - 20}\" font-size=\"11\" fill=\"{tm}\" text-anchor=\"end\">{dates[-1].strftime(\"%b %Y\")}</text>'
+              svg += f'<path d=\"{ad}\" fill=\"url(#starGrad_{theme_str})\" /><path d=\"{pd}\" fill=\"none\" stroke=\"{lc}\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" />'
+              for (x, y, s, l) in s_pts[:-1]:
+                  svg += f'<circle cx=\"{x:.1f}\" cy=\"{y:.1f}\" r=\"4\" fill=\"{lc}\" stroke=\"#fff\" stroke-width=\"1.5\"><title>{s} stars</title></circle>'
+              svg += f'<circle cx=\"{s_pts[-1][0]:.1f}\" cy=\"{s_pts[-1][1]:.1f}\" r=\"5\" fill=\"{lc}\" stroke=\"#fff\" stroke-width=\"2\"><title>{len(stars)} stars</title></circle></svg>'
+              return svg
+
+          os.makedirs('.github/assets', exist_ok=True)
+          open('.github/assets/star-history-dark.svg', 'w', encoding='utf-8').write(generate_svg(repo_name, stargazers, True))
+          open('.github/assets/star-history-light.svg', 'w', encoding='utf-8').write(generate_svg(repo_name, stargazers, False))
+          print('SVGs updated successfully!')
+          "
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Commit and push if changed
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .github/assets/
+          git diff --staged --quiet || git commit -m "chore(stars): auto-update star history chart"
+          git push origin main
