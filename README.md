@@ -3,11 +3,11 @@
 <p align="center">
   <a href="https://github.com/good9527/Claude-Desktop-Chinese">
     <img src="https://img.shields.io/badge/Release-v1.0.0-blue.svg?style=for-the-badge&logo=github" alt="Release Version">
+    <img src="https://img.shields.io/github/actions/workflow/status/good9527/Claude-Desktop-Chinese/ci.yml?style=for-the-badge&logo=githubactions&logoColor=white&label=CI%20BUILD" alt="CI Status">
     <img src="https://img.shields.io/badge/Language-Chinese%20%26%20English-brightgreen.svg?style=for-the-badge" alt="Bilingual Support">
     <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-blue.svg?style=for-the-badge" alt="Platform Support">
     <img src="https://img.shields.io/badge/Coverage-99.8%25%20(22319%20Keys)-orange.svg?style=for-the-badge" alt="Coverage">
     <img src="https://img.shields.io/badge/Persistence-3--Tier%20Self--Healing-red.svg?style=for-the-badge" alt="Self Healing">
-    <img src="https://img.shields.io/badge/Zero%20Dependency-Native%20Only-success.svg?style=for-the-badge" alt="Zero Dependency">
     <img src="https://img.shields.io/badge/License-MIT-purple.svg?style=for-the-badge" alt="MIT License">
   </a>
 </p>
