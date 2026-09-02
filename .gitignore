@@ -27,3 +27,6 @@ chunks/
 .env
 .env.*
 local/
+
+# Teamwork multi-agent system scratch files (never ship to users)
+.agents/
