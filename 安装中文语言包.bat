@@ -1,5 +1,6 @@
 @echo off
 chcp 65001 >nul
-echo 此旧入口现在会使用维护中的安装器。
-echo.
-call "%~dp0install.bat"
+title Claude Desktop 中文汉化管理工具
+cd /d "%~dp0"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0patch_claude.ps1"
+pause
