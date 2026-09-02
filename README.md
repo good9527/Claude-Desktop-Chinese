@@ -139,15 +139,19 @@ Windows 用户可以直接双击仓库中的 `安装中文语言包.bat` 或运�
 
 ---
 
-## 📈 Star History
+## 🌟 支持项目 | Give a Star
+
+如果本项目对你有帮助，欢迎点击右上角的 ⭐ Star 支持！
 
 <p align="center">
-  <a href="https://star-history.com/#good9527/Claude-Desktop-Chinese&Date">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=good9527/Claude-Desktop-Chinese&type=Date&theme=dark" />
-      <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=good9527/Claude-Desktop-Chinese&type=Date" />
-      <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=good9527/Claude-Desktop-Chinese&type=Date" width="100%" />
-    </picture>
+  <a href="https://github.com/good9527/Claude-Desktop-Chinese/stargazers">
+    <img src="https://img.shields.io/github/stars/good9527/Claude-Desktop-Chinese?style=for-the-badge&amp;logo=github&amp;color=gold&amp;label=GitHub%20Stars" alt="GitHub Stars">
+  </a>
+  <a href="https://github.com/good9527/Claude-Desktop-Chinese/issues">
+    <img src="https://img.shields.io/github/issues/good9527/Claude-Desktop-Chinese?style=for-the-badge&amp;color=blue&amp;label=Issues" alt="Issues">
+  </a>
+  <a href="https://github.com/good9527/Claude-Desktop-Chinese/releases">
+    <img src="https://img.shields.io/github/v/release/good9527/Claude-Desktop-Chinese?style=for-the-badge&amp;color=green&amp;label=Latest%20Release" alt="Latest Release">
   </a>
 </p>
 
