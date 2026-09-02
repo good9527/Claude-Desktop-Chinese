@@ -166,6 +166,7 @@ def validate_no_local_absolute_paths() -> None:
         ROOT / "scripts" / "validate.py",
         ROOT / "SEO_GEO_INDEX.md",
         ROOT / "PROJECT.md",
+        ROOT / ".github" / "pull_request_template.md",
     }
 
     for path in tracked_text_files():
