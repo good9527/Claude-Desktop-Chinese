@@ -154,6 +154,16 @@ function Set-DaemonState {
             Register-ScheduledTask -TaskName $taskName -Action $actionObj -Trigger $triggerObj -Force -ErrorAction SilentlyContinue | Out-Null
         } catch {}
 
+        try {
+            $runningWatcher = Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object { 
+                ($_.CommandLine -like "*Claude*watcher.ps1*") -and $_.ProcessId -ne $PID 
+            }
+            if (-not $runningWatcher) {
+                Start-Process -FilePath "powershell.exe" -ArgumentList "-WindowStyle Hidden -NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`"" -WindowStyle Hidden
+                Write-Log "Background auto-healing watcher process spawned successfully!" "SUCCESS"
+            }
+        } catch {}
+
         Write-Log "Auto-healing daemon enabled successfully." "SUCCESS"
         return $true
     } elseif ($Action -eq "disable") {
