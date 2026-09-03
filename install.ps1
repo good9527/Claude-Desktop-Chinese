@@ -108,6 +108,25 @@ function Get-CdnFile {
     return $false
 }
 
+function Ensure-WritableFile {
+    param([string]$FilePath)
+    if (-not (Test-Path -LiteralPath $FilePath)) { return $false }
+    try {
+        $stream = [System.IO.File]::Open($FilePath, [System.IO.FileMode]::Open, [System.IO.FileAccess]::ReadWrite)
+        $stream.Close()
+        return $true
+    } catch {
+        try {
+            takeown.exe /F "$FilePath" /A | Out-Null
+            icacls.exe "$FilePath" /grant "*S-1-5-32-544:F" | Out-Null
+            icacls.exe "$FilePath" /grant "${env:USERNAME}:(F)" | Out-Null
+            return $true
+        } catch {
+            return $false
+        }
+    }
+}
+
 function Set-DaemonState {
     param([string]$Action)
     $scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { $cacheDir }
@@ -119,12 +138,34 @@ function Set-DaemonState {
         if (Test-Path $watcherSrc) { Copy-Item $watcherSrc $watcherDst -Force }
         $cmd = "powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$watcherDst`" -RunOnce -Quiet"
         Set-ItemProperty -Path $regRunKey -Name $regRunName -Value $cmd -Force -ErrorAction SilentlyContinue
+
+        try {
+            $actionObj = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$watcherDst`""
+            $triggerObj = New-ScheduledTaskTrigger -AtLogOn
+            $settingsObj = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit 0 -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)
+            $principalObj = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive -RunLevel Highest
+            Register-ScheduledTask -TaskName $taskName -Action $actionObj -Trigger $triggerObj -Settings $settingsObj -Principal $principalObj -Force -ErrorAction SilentlyContinue | Out-Null
+        } catch {}
+
+        try {
+            $runningWatcher = Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object { 
+                ($_.CommandLine -like "*Claude*watcher.ps1*") -and $_.ProcessId -ne $PID 
+            }
+            if (-not $runningWatcher) {
+                Start-Process -FilePath "powershell.exe" -ArgumentList "-WindowStyle Hidden -NoProfile -ExecutionPolicy Bypass -File `"$watcherDst`"" -WindowStyle Hidden
+                Write-Msg "Background auto-healing watcher process spawned successfully (<10ms)!" "Green"
+            }
+        } catch {}
+
         return $true
     } elseif ($Action -eq "disable") {
         Remove-ItemProperty -Path $regRunKey -Name $regRunName -ErrorAction SilentlyContinue
+        try { Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue } catch {}
         return $true
     } elseif ($Action -eq "status") {
-        return ((Get-ItemProperty -Path $regRunKey -Name $regRunName -ErrorAction SilentlyContinue) -ne $null)
+        $regExists = (Get-ItemProperty -Path $regRunKey -Name $regRunName -ErrorAction SilentlyContinue) -ne $null
+        $taskExists = (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) -ne $null
+        return ($regExists -or $taskExists)
     }
 }
 
@@ -193,14 +234,21 @@ function Invoke-InstallPatch {
     [System.IO.File]::WriteAllText($tempFile, $mergedJson, [System.Text.Encoding]::UTF8)
 
     # Replace with retry
+    Ensure-WritableFile $i18nFile | Out-Null
     $success = $false
     for ($i = 1; $i -le 5; $i++) {
         try {
-            [System.IO.File]::Copy($tempFile, $i18nFile, $true)
+            [System.IO.File]::WriteAllText($i18nFile, $mergedJson, [System.Text.Encoding]::UTF8)
             $success = $true
             break
         } catch {
-            Start-Sleep -Milliseconds (300 * $i)
+            try {
+                [System.IO.File]::Copy($tempFile, $i18nFile, $true)
+                $success = $true
+                break
+            } catch {
+                Start-Sleep -Milliseconds (300 * $i)
+            }
         }
     }
     Remove-Item $tempFile -Force -ErrorAction SilentlyContinue

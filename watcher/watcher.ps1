@@ -71,6 +71,25 @@ function Find-ClaudeI18nFile {
     return $null
 }
 
+function Ensure-WritableFile {
+    param([string]$FilePath)
+    if (-not (Test-Path -LiteralPath $FilePath)) { return $false }
+    try {
+        $stream = [System.IO.File]::Open($FilePath, [System.IO.FileMode]::Open, [System.IO.FileAccess]::ReadWrite)
+        $stream.Close()
+        return $true
+    } catch {
+        try {
+            takeown.exe /F "$FilePath" /A | Out-Null
+            icacls.exe "$FilePath" /grant "*S-1-5-32-544:F" | Out-Null
+            icacls.exe "$FilePath" /grant "${env:USERNAME}:(F)" | Out-Null
+            return $true
+        } catch {
+            return $false
+        }
+    }
+}
+
 function Apply-ClaudePatch {
     param([string]$targetFile, [string]$dictFile)
 
@@ -109,14 +128,21 @@ function Apply-ClaudePatch {
         $tempFile = Join-Path $cacheDir ("en-US-patched-" + [Guid]::NewGuid().ToString("N") + ".json")
         [System.IO.File]::WriteAllText($tempFile, $mergedJson, [System.Text.Encoding]::UTF8)
 
+        Ensure-WritableFile $targetFile | Out-Null
         $success = $false
         for ($i = 1; $i -le 5; $i++) {
             try {
-                [System.IO.File]::Copy($tempFile, $targetFile, $true)
+                [System.IO.File]::WriteAllText($targetFile, $mergedJson, [System.Text.Encoding]::UTF8)
                 $success = $true
                 break
             } catch {
-                Start-Sleep -Milliseconds (300 * $i)
+                try {
+                    [System.IO.File]::Copy($tempFile, $targetFile, $true)
+                    $success = $true
+                    break
+                } catch {
+                    Start-Sleep -Milliseconds (300 * $i)
+                }
             }
         }
         Remove-Item $tempFile -Force -ErrorAction SilentlyContinue
@@ -149,9 +175,11 @@ function Set-DaemonState {
         Set-ItemProperty -Path $regRunKey -Name $regRunName -Value $cmd -Force -ErrorAction SilentlyContinue
 
         try {
-            $actionObj = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$scriptPath`" -RunOnce -Quiet"
+            $actionObj = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$scriptPath`""
             $triggerObj = New-ScheduledTaskTrigger -AtLogOn
-            Register-ScheduledTask -TaskName $taskName -Action $actionObj -Trigger $triggerObj -Force -ErrorAction SilentlyContinue | Out-Null
+            $settingsObj = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit 0 -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)
+            $principalObj = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive -RunLevel Highest
+            Register-ScheduledTask -TaskName $taskName -Action $actionObj -Trigger $triggerObj -Settings $settingsObj -Principal $principalObj -Force -ErrorAction SilentlyContinue | Out-Null
         } catch {}
 
         try {
@@ -178,6 +206,32 @@ function Set-DaemonState {
     }
 }
 
+function Start-ClaudeWatcherService {
+    Write-Log "Starting Claude Desktop background auto-healing service..." "INFO"
+
+    $i18n = Find-ClaudeI18nFile
+    if ($i18n -and $dictSource) {
+        Apply-ClaudePatch -targetFile $i18n -dictFile $dictSource | Out-Null
+    }
+
+    Write-Log "Claude Desktop Watcher active. Entering background heartbeat loop..." "SUCCESS"
+
+    # Heartbeat loop: periodically check if Claude updated every 15 minutes
+    while ($true) {
+        Start-Sleep -Seconds 900
+        try {
+            $currentI18n = Find-ClaudeI18nFile
+            if ($currentI18n -and (Test-Path -LiteralPath $currentI18n)) {
+                $txt = [System.IO.File]::ReadAllText($currentI18n, [System.Text.Encoding]::UTF8)
+                if ($txt -notmatch "[\u4e00-\u9fa5]") {
+                    Write-Log "Official update detected in Claude ($currentI18n)! Auto-healing..." "WARN"
+                    Apply-ClaudePatch -targetFile $currentI18n -dictFile $dictSource | Out-Null
+                }
+            }
+        } catch {}
+    }
+}
+
 if ($DaemonOn -or ($Daemon -eq "enable")) { Set-DaemonState "enable"; exit 0 }
 if ($DaemonOff -or ($Daemon -eq "disable")) { Set-DaemonState "disable"; exit 0 }
 if ($Daemon -eq "status" -or $Status) {
@@ -201,8 +255,13 @@ if ($Check) {
     exit ($i18nFile ? 0 : 1)
 }
 
-if ($RunOnce -or -not $RegisterTask) {
+if ($RunOnce) {
     if ($i18nFile -and $dictSource) {
-        Apply-ClaudePatch -targetFile $i18nFile -dictFile $dictSource
+        $res = Apply-ClaudePatch -targetFile $i18nFile -dictFile $dictSource
+        exit ($res ? 0 : 1)
     }
+    exit 1
 }
+
+# Continuous Background Watcher Loop
+Start-ClaudeWatcherService
