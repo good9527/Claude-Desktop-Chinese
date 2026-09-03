@@ -42,18 +42,31 @@ function Test-IsAdmin {
 
 function Start-ElevatedSelf {
     if (Test-IsAdmin) { return }
-    Write-Msg "Requesting administrator permission..." "Yellow"
+    Write-Msg "正在申请管理员权限以接管 Windows 商店受保护目录..." "Yellow"
+    Write-Msg "（系统将自动弹出用户账户控制 UAC 提示窗口，请点击【是】继续）" "Cyan"
     $script = if ($PSCommandPath) { $PSCommandPath } else {
         $temp = Join-Path $env:TEMP "claude_install_elevated.ps1"
-        $wc = New-Object System.Net.WebClient
-        $wc.Encoding = [System.Text.Encoding]::UTF8
-        $wc.DownloadFile("https://fastly.jsdelivr.net/gh/$repoOwner/$repoName@main/install.ps1", $temp)
-        $temp
+        try {
+            $wc = New-Object System.Net.WebClient
+            $wc.Encoding = [System.Text.Encoding]::UTF8
+            $wc.DownloadFile("https://fastly.jsdelivr.net/gh/$repoOwner/$repoName@main/install.ps1", $temp)
+            $temp
+        } catch {
+            $temp
+        }
     }
-    $args = "-NoProfile -ExecutionPolicy Bypass -File `"$script`""
-    $p = Start-Process powershell.exe -ArgumentList $args -Verb RunAs -PassThru
-    $p.WaitForExit()
-    exit $p.ExitCode
+    $args = "-NoProfile -ExecutionPolicy Bypass -Command `"& { & '$script'; Start-Sleep -Seconds 2 }`""
+    try {
+        $p = Start-Process powershell.exe -ArgumentList $args -Verb RunAs -PassThru
+        $p.WaitForExit()
+        if ($p.ExitCode -eq 0) {
+            Write-Msg "[+] 管理员权限获取成功，Claude 中文语言包与永久自愈守护已安装就绪！" "Green"
+        }
+        exit $p.ExitCode
+    } catch {
+        Write-Msg "用户取消了授权或系统策略限制提权: $($_.Exception.Message)" "Yellow"
+        exit 1
+    }
 }
 
 function Find-ClaudeI18nFile {
