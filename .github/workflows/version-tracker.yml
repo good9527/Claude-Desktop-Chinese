@@ -1,0 +1,53 @@
+name: Daily Upstream Tracker & Offline Release Builder
+
+on:
+  schedule:
+    - cron: '0 2 * * *' # Every day at 02:00 UTC (10:00 AM CST)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  track-and-release:
+    name: Track Upstream & Build Release Assets
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run End-to-End Test Suite
+        shell: pwsh
+        run: |
+          powershell -ExecutionPolicy Bypass -File tests/e2e_tests.ps1
+
+      - name: Package Claude Universal Offline Installation Bundle
+        shell: pwsh
+        run: |
+          $releaseDir = "release_bundle"
+          New-Item -ItemType Directory -Path $releaseDir -Force | Out-Null
+          
+          Copy-Item -Path "dist" -Destination $releaseDir -Recurse -Force
+          Copy-Item -Path "install.ps1" -Destination $releaseDir -Force
+          Copy-Item -Path "install.bat" -Destination $releaseDir -Force
+          Copy-Item -Path "watcher" -Destination $releaseDir -Recurse -Force
+          Copy-Item -Path "README.md" -Destination $releaseDir -Force
+          Copy-Item -Path "LICENSE" -Destination $releaseDir -Force -ErrorAction SilentlyContinue
+
+          $zipName = "Claude-Desktop-Chinese-Universal-Offline.zip"
+          Compress-Archive -Path "$releaseDir\*" -DestinationPath $zipName -Force
+          Write-Host "Successfully packaged $zipName" -ForegroundColor Green
+
+      - name: Upload Release Asset to Latest Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
+        run: |
+          $zipPath = "Claude-Desktop-Chinese-Universal-Offline.zip"
+          if (Test-Path $zipPath) {
+            gh release upload latest $zipPath --clobber
+            Write-Host "Updated latest release asset on GitHub." -ForegroundColor Green
+          }

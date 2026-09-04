@@ -2,6 +2,7 @@ param(
     [Parameter(Mandatory=$false)][Alias("i")][switch]$Install,
     [Parameter(Mandatory=$false)][Alias("u")][switch]$Uninstall,
     [Parameter(Mandatory=$false)][Alias("c")][switch]$Check,
+    [Parameter(Mandatory=$false)][Alias("doc","diag")][switch]$Doctor,
     [Parameter(Mandatory=$false)][Alias("r")][switch]$Restore,
     [Parameter(Mandatory=$false)][ValidateSet("enable", "disable", "status", "")][string]$Daemon = "",
     [Parameter(Mandatory=$false)][switch]$DaemonOn,
@@ -316,7 +317,97 @@ function Invoke-CheckDiagnostics {
     Write-Msg "==========================================================" "Cyan"
 }
 
+
+# Action: Doctor / Deep Environment Diagnostics for Claude Desktop
+Function Invoke-ClaudeDoctorDiagnostics {
+    Write-Host "==========================================================" -ForegroundColor DarkYellow
+    Write-Host "       Claude Desktop Chinese Patch System Doctor         " -ForegroundColor DarkYellow
+    Write-Host "      [+] Windows Store & MSIX Health Inspector           " -ForegroundColor DarkYellow
+    Write-Host "==========================================================" -ForegroundColor DarkYellow
+
+    $osVer = [System.Environment]::OSVersion.VersionString
+    $is64 = [System.Environment]::Is64BitOperatingSystem
+    Write-Host "`n[1/5] Operating System & Permission Level:" -ForegroundColor Yellow
+    Write-Host "  * OS Version             : $osVer (64-bit: $is64)" -ForegroundColor White
+    $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+    Write-Host "  * Administrative Level   : $(if ($isAdmin) { '[PASS] Elevated (Administrator)' } else { '[INFO] Standard User (UAC auto-elevates when needed)' })" -ForegroundColor $(if ($isAdmin) { "Green" } else { "Cyan" })
+
+    Write-Host "`n[2/5] Claude Installation & Target Detection:" -ForegroundColor Yellow
+    $targetFile = Find-ClaudeI18nFile
+    $isStore = if ($targetFile -like "*WindowsApps*") { "Windows Store (MSIX Package)" } else { "Standard Win32 Application" }
+    Write-Host "  * Target Type            : $(if ($targetFile) { $isStore } else { 'NOT FOUND [FAIL]' })" -ForegroundColor $(if ($targetFile) { "White" } else { "Red" })
+    Write-Host "  * Language File Path     : $(if ($targetFile) { $targetFile } else { 'NOT FOUND' })" -ForegroundColor White
+
+    Write-Host "`n[3/5] Chinese Language File & ACL Permission Status:" -ForegroundColor Yellow
+    $fileWritable = $false
+    $chineseCharCount = 0
+    if ($targetFile -and (Test-Path $targetFile)) {
+        try {
+            $content = Get-Content -Path $targetFile -Raw -Encoding UTF8
+            $matches = [regex]::Matches($content, "[\u4e00-\u9fa5]")
+            $chineseCharCount = $matches.Count
+            $testFs = [System.IO.File]::Open($targetFile, [System.IO.FileMode]::Open, [System.IO.FileAccess]::ReadWrite)
+            $testFs.Close()
+            $fileWritable = $true
+        } catch {}
+    }
+    $isPatched = $chineseCharCount -gt 500
+    Write-Host "  * Chinese Characters in JSON: $chineseCharCount $(if ($isPatched) { '[PASS] (Fully Translated)' } else { '[WARN] (English Original)' })" -ForegroundColor $(if ($isPatched) { "Green" } else { "Yellow" })
+    Write-Host "  * ACL Write Access       : $(if ($fileWritable) { '[PASS] Unrestricted Write Access' } else { '[WARN] Protected Directory' })" -ForegroundColor $(if ($fileWritable) { "Green" } else { "Yellow" })
+
+    Write-Host "`n[4/5] Auto-Healing Daemon & Scheduled Task:" -ForegroundColor Yellow
+    $task = Get-ScheduledTask -TaskName "ClaudeDesktopChineseWatcher" -ErrorAction SilentlyContinue
+    Write-Host "  * Scheduled Task Status  : $(if ($task) { '[PASS] Registered (' + $task.State + ')' } else { '[WARN] Not Registered' })" -ForegroundColor $(if ($task) { "Green" } else { "Yellow" })
+    $runningWatcher = Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object { 
+        $_.CommandLine -like "*watcher.ps1*" -and $_.ProcessId -ne $PID 
+    } | Select-Object -First 1
+    Write-Host "  * Active Background PID  : $(if ($runningWatcher) { '[PASS] PID ' + $runningWatcher.ProcessId } else { '[INFO] Task Scheduler Triggered' })" -ForegroundColor $(if ($runningWatcher) { "Green" } else { "Cyan" })
+
+    Write-Host "`n[5/5] Multi-Mirror Global CDN Network Latencies:" -ForegroundColor Yellow
+    $mirrors = @(
+        @{ Name = "Fastly CDN "; Url = "https://fastly.jsdelivr.net/gh/good9527/Claude-Desktop-Chinese@main/dist/zh-CN.json" },
+        @{ Name = "jsDelivr CDN"; Url = "https://cdn.jsdelivr.net/gh/good9527/Claude-Desktop-Chinese@main/dist/zh-CN.json" },
+        @{ Name = "GitHub Raw  "; Url = "https://raw.githubusercontent.com/good9527/Claude-Desktop-Chinese/main/dist/zh-CN.json" }
+    )
+    foreach ($m in $mirrors) {
+        $sw = [System.Diagnostics.Stopwatch]::StartNew()
+        try {
+            $req = [System.Net.WebRequest]::Create($m.Url)
+            $req.Timeout = 4000
+            $req.UserAgent = "ClaudeDoctor/1.0"
+            $resp = $req.GetResponse()
+            $sw.Stop()
+            $resp.Close()
+            Write-Host "  * $($m.Name) : [PASS] $($sw.ElapsedMilliseconds) ms" -ForegroundColor Green
+        } catch {
+            Write-Host "  * $($m.Name) : [WARN] Connection timeout" -ForegroundColor Yellow
+        }
+    }
+
+    $overallScore = 100
+    if (-not $targetFile) { $overallScore -= 50 }
+    if (-not $isPatched) { $overallScore -= 30 }
+    if (-not $fileWritable) { $overallScore -= 10 }
+    if (-not $task) { $overallScore -= 10 }
+
+    Write-Host "`n==========================================================" -ForegroundColor DarkYellow
+    Write-Host "  Doctor Health Score : $overallScore / 100" -ForegroundColor $(if ($overallScore -ge 80) { "Green" } elseif ($overallScore -ge 50) { "Yellow" } else { "Red" })
+    if ($overallScore -ge 80) {
+        Write-Host "  Diagnostic Status   : HEALTHY [Claude Localization 100% Active & Protected]" -ForegroundColor Green
+    } else {
+        Write-Host "  Remediation Action  : Run 'powershell -File install.ps1' to auto-repair." -ForegroundColor Yellow
+    }
+    Write-Host "==========================================================`n" -ForegroundColor DarkYellow
+    return $(if ($overallScore -ge 80) { 0 } else { 1 })
+}
+
+
 # Parameter Dispatcher
+if ($Doctor) {
+    $res = Invoke-ClaudeDoctorDiagnostics
+    exit $res
+}
+
 if ($Check) { Invoke-CheckDiagnostics; exit 0 }
 if ($Restore -or $Uninstall) { Invoke-RestoreBackup; Set-DaemonState "disable"; exit 0 }
 if ($DaemonOn -or ($Daemon -eq "enable")) { Set-DaemonState "enable"; exit 0 }

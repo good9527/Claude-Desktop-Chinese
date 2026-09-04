@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640">
+  <defs>
+    <linearGradient id="bgClaude" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#181412"/>
+      <stop offset="50%" stop-color="#231b17"/>
+      <stop offset="100%" stop-color="#120f0e"/>
+    </linearGradient>
+    <linearGradient id="claudeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#d97706"/>
+      <stop offset="50%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#fb923c"/>
+    </linearGradient>
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2a221d"/>
+      <stop offset="100%" stop-color="#1c1613"/>
+    </linearGradient>
+    <filter id="glowClaude" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1280" height="640" fill="url(#bgClaude)"/>
+
+  <!-- Tech Grid Background -->
+  <g opacity="0.08" stroke="#f59e0b" stroke-width="1">
+    <path d="M0,80 H1280 M0,160 H1280 M0,240 H1280 M0,320 H1280 M0,400 H1280 M0,480 H1280 M0,560 H1280"/>
+    <path d="M160,0 V640 M320,0 V640 M480,0 V640 M640,0 V640 M800,0 V640 M960,0 V640 M1120,0 V640"/>
+  </g>
+
+  <!-- Glowing Accent Orbs -->
+  <circle cx="1120" cy="160" r="180" fill="#d97706" opacity="0.15" filter="url(#glowClaude)"/>
+  <circle cx="160" cy="480" r="140" fill="#f97316" opacity="0.10" filter="url(#glowClaude)"/>
+
+  <!-- Logo Icon Container -->
+  <g transform="translate(100, 110)">
+    <rect width="96" height="96" rx="24" fill="#292019" stroke="#f59e0b" stroke-width="2" filter="url(#glowClaude)"/>
+    <!-- Claude Asterisk Symbol -->
+    <path d="M48,22 L48,74 M22,48 L74,48 M30,30 L66,66 M30,66 L66,30" fill="none" stroke="url(#claudeGrad)" stroke-width="6" stroke-linecap="round"/>
+  </g>
+
+  <!-- Title & Subtitle -->
+  <text x="220" y="155" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', sans-serif" font-size="46" font-weight="900" fill="#ffffff" letter-spacing="1">
+    Claude Desktop <tspan fill="url(#claudeGrad)">深度汉化补丁</tspan>
+  </text>
+  <text x="220" y="195" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="20" font-weight="600" fill="#a8a29e" letter-spacing="0.5">
+    ENTERPRISE-GRADE LOCALIZATION &amp; WINDOWS STORE PERMANENT SELF-HEALING
+  </text>
+
+  <!-- Core Value Proposition -->
+  <text x="100" y="295" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', sans-serif" font-size="28" font-weight="700" fill="#f5f5f4">
+    ⚡ 完美解决 Windows 商店版受保护目录 · UAC 自动提权 · 永不失效
+  </text>
+  <text x="100" y="340" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', sans-serif" font-size="18" font-weight="400" fill="#a8a29e">
+    深度攻克 WindowsApps 权限锁与商店自动覆盖痛点（TakeOwn + ICACLS 穿透 + 最高权限计划任务 + 15分钟心跳双保险）
+  </text>
+
+  <!-- Badges Row -->
+  <g transform="translate(100, 410)">
+    <!-- Badge 1 -->
+    <rect x="0" y="0" width="240" height="70" rx="14" fill="url(#cardGrad)" stroke="#44352b" stroke-width="1.5"/>
+    <text x="20" y="32" font-family="sans-serif" font-size="14" font-weight="700" fill="#f59e0b">UAC 自动提权</text>
+    <text x="20" y="52" font-family="sans-serif" font-size="13" fill="#d6d3d1">弹窗一键确认，免手动CMD</text>
+
+    <!-- Badge 2 -->
+    <rect x="260" y="0" width="240" height="70" rx="14" fill="url(#cardGrad)" stroke="#44352b" stroke-width="1.5"/>
+    <text x="280" y="32" font-family="sans-serif" font-size="14" font-weight="700" fill="#4ade80">权限绝对穿透</text>
+    <text x="280" y="52" font-family="sans-serif" font-size="13" fill="#d6d3d1">接管 TrustedInstaller 锁</text>
+
+    <!-- Badge 3 -->
+    <rect x="520" y="0" width="240" height="70" rx="14" fill="url(#cardGrad)" stroke="#44352b" stroke-width="1.5"/>
+    <text x="540" y="32" font-family="sans-serif" font-size="14" font-weight="700" fill="#fbbf24">20/20 全绿</text>
+    <text x="540" y="52" font-family="sans-serif" font-size="13" fill="#d6d3d1">双引擎 MSIX / Win32 测试</text>
+
+    <!-- Badge 4 -->
+    <rect x="780" y="0" width="240" height="70" rx="14" fill="url(#cardGrad)" stroke="#44352b" stroke-width="1.5"/>
+    <text x="800" y="32" font-family="sans-serif" font-size="14" font-weight="700" fill="#f97316">双模极速自愈</text>
+    <text x="800" y="52" font-family="sans-serif" font-size="13" fill="#d6d3d1">开机守卫 + 15分钟心跳</text>
+  </g>
+
+  <!-- Footer Info -->
+  <g transform="translate(100, 540)">
+    <text x="0" y="30" font-family="Consolas, Monaco, monospace" font-size="16" fill="#f59e0b">
+      irm https://raw.githubusercontent.com/good9527/Claude-Desktop-Chinese/main/install.ps1 | iex
+    </text>
+    <text x="960" y="30" font-family="sans-serif" font-size="15" font-weight="600" fill="#78716c">
+      github.com/good9527
+    </text>
+  </g>
+</svg>

@@ -1,3 +1,7 @@
+<p align="center">
+  <img src=".github/assets/social-preview.svg" alt="Social Preview Banner" width="100%" />
+</p>
+
 # Claude Desktop 汉化补丁 / 中文语言包 (Claude-Desktop-Chinese)
 > **Anthropic Claude 桌面版全平台深度中文汉化包 · 22,000+ 词条全量覆盖 · 官方升级永久自愈守护**
 
