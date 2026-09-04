@@ -1,113 +1,156 @@
 <p align="center">
-  <img src=".github/assets/social-preview.svg" alt="Social Preview Banner" width="100%" />
+  <img src=".github/assets/social-preview.svg" alt="Claude Desktop Chinese Localization" width="100%" />
 </p>
 
-# Claude Desktop 汉化补丁 / 中文语言包 (Claude-Desktop-Chinese)
-> **Anthropic Claude 桌面版全平台深度中文汉化包 · 22,000+ 词条全量覆盖 · 官方升级永久自愈守护**
+<div align="center">
 
-<p align="center">
-  <a href="https://github.com/good9527/Claude-Desktop-Chinese">
-    <img src="https://img.shields.io/badge/Release-v1.0.0-blue.svg?style=for-the-badge&logo=github" alt="Release Version">
-    <img src="https://img.shields.io/github/actions/workflow/status/good9527/Claude-Desktop-Chinese/ci.yml?style=for-the-badge&logo=githubactions&logoColor=white&label=CI%20BUILD" alt="CI Status">
-    <img src="https://img.shields.io/badge/Language-Chinese%20%26%20English-brightgreen.svg?style=for-the-badge" alt="Bilingual Support">
-    <img src="https://img.shields.io/badge/Platform-Windows%20(Win32%20%26%20MSIX)%20%7C%20macOS%20%7C%20Linux-blue.svg?style=for-the-badge" alt="Platform Support">
-    <img src="https://img.shields.io/badge/Coverage-99.8%25%20(22319%20Keys)-orange.svg?style=for-the-badge" alt="Coverage">
-    <img src="https://img.shields.io/badge/Persistence-4--Tier%20Self--Healing-red.svg?style=for-the-badge" alt="Self Healing">
-    <img src="https://img.shields.io/badge/Elevation-Interactive%20UAC%20Auto--Prompt-success.svg?style=for-the-badge" alt="Auto Elevation">
-    <img src="https://img.shields.io/badge/License-MIT-purple.svg?style=for-the-badge" alt="MIT License">
-  </a>
-</p>
+# Anthropic Claude Desktop 深度汉化补丁与自愈系统
+### ⚡ 攻破微软商店权限锁 · 22,000+ 词条全量覆盖 · 官方升级永久自愈 · UAC 自动提权
 
-> [!TIP]
-> 🔗 **开源生态矩阵联动**：  
-> 如果你同时在日常开发中使用 Google Antigravity 智能体编程助手，欢迎体验我们的姐妹项目：  
-> 👉 [**good9527/Antigravity-Chinese-Patch** (Google Antigravity 全平台通用中文汉化补丁 · 零依赖原生热注入 · 官方更新自动保活)](https://github.com/good9527/Antigravity-Chinese-Patch)
+[![Release](https://img.shields.io/github/v/release/good9527/Claude-Desktop-Chinese?style=flat-square&color=d97706&label=Release)](https://github.com/good9527/Claude-Desktop-Chinese/releases)
+[![CI Build](https://img.shields.io/github/actions/workflow/status/good9527/Claude-Desktop-Chinese/ci.yml?style=flat-square&label=CI%20Build)](https://github.com/good9527/Claude-Desktop-Chinese/actions)
+[![Tests](https://img.shields.io/badge/Tests-20%2F20%20Passed-38ef7d?style=flat-square)](https://github.com/good9527/Claude-Desktop-Chinese)
+[![Coverage](https://img.shields.io/badge/Coverage-99.8%25%20(22319%20Keys)-f59e0b?style=flat-square)](https://github.com/good9527/Claude-Desktop-Chinese)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20(Win32%20%26%20MSIX)%20%7C%20macOS-blue?style=flat-square)](https://github.com/good9527/Claude-Desktop-Chinese)
+[![License](https://img.shields.io/badge/License-MIT-a855f7?style=flat-square)](LICENSE)
 
-这是一个针对 Anthropic 出品的强大 AI 对话与智能体桌面客户端 **Claude Desktop (Claude 桌面版)** 的开源、零依赖、永久自愈的通用深度中文汉化补丁与自动化运维系统。
+**专为 Anthropic Claude 桌面版打造：彻底攻破“WindowsApps 商店版权限拒绝”与“商店后台自动更新回滚”痛点！**
 
-An open-source, zero-dependency, permanent self-healing Chinese localization system for **Claude Desktop** (Windows, macOS, and Linux).
+[⚡ 极速一键安装](#-极速一键安装--quick-install) • [🛡️ 四级自愈架构](#️-独创四级自愈架构) • [⚔️ 方案横向对比](#️-方案横向对比) • [🩺 一键体检诊断](#-一键体检自愈诊断) • [🤖 常见问答](#-常见问答--faq)
 
-> 📚 **AI 搜索引擎与知识库索引**: [SEO_GEO_INDEX.md](SEO_GEO_INDEX.md) | **LLM 专用元数据**: [llms.txt](llms.txt) | [sitemap.xml](sitemap.xml)
+</div>
 
 ---
 
-## ⚡ 极速一键安装 | Quick 1-Click Install
+## ⚡ 极速一键安装 | Quick Install
 
-### 🪟 Windows (PowerShell 终端直接运行，自动弹出管理员授权)
+> [!IMPORTANT]
+> ### 💡 无论 Windows 商店版 (MSIX) 还是传统 Win32 版，终端运行这一行即可全自动搞定：
+
+### 🪟 Windows (PowerShell 终端运行 · 推荐)
+
 ```powershell
-iwr -useb https://fastly.jsdelivr.net/gh/good9527/Claude-Desktop-Chinese@main/install.ps1 | iex
+irm https://fastly.jsdelivr.net/gh/good9527/Claude-Desktop-Chinese@main/install.ps1 | iex
 ```
-> [!NOTE]
-> 针对 Windows 商店版 (MSIX) 受保护目录 `C:\Program Files\WindowsApps`，脚本会自动弹出原生系统 UAC 确认框，只需点击一次**【是】**，脚本即可全自动攻破系统权限并完成注入！
+
+<details>
+<summary><b>备用网络安装命令（国内镜像 / GitHub直连）</b></summary>
+
+```powershell
+# 备用源 1 (jsDelivr CDN):
+irm https://cdn.jsdelivr.net/gh/good9527/Claude-Desktop-Chinese@main/install.ps1 | iex
+
+# 备用源 2 (GitHub Raw 直连):
+irm https://raw.githubusercontent.com/good9527/Claude-Desktop-Chinese/main/install.ps1 | iex
+```
+</details>
+
+* 🔑 **自动弹出 UAC 授权**：遇到微软商店受保护目录自动弹出原生确认框，只需点击一次**【是】**，全自动攻破 `TrustedInstaller` 权限锁！
+* 📚 **22,319+ 词条超全覆盖**：Artifacts 独立窗口、MCP 服务配置面板、模型思考（Extended Thinking）全方位汉化！
+* 🛡️ **商店更新永不失效**：最高特权后台服务自愈，微软商店后台更新换目录也能自动同步接管！
+
+---
 
 ### 🍎 macOS & 🐧 Linux (终端直接运行)
+
 ```bash
 curl -fsSL https://fastly.jsdelivr.net/gh/good9527/Claude-Desktop-Chinese@main/install.sh | bash
 ```
 
-### 📦 离线环境与企业内网安装 (Offline Installation)
-1. 从 [Releases](https://github.com/good9527/Claude-Desktop-Chinese/releases) 下载 `Claude-Desktop-Chinese-Offline.zip` 并解压。
-2. Windows 双击运行 `安装中文语言包.bat` 或在终端执行 `powershell -ExecutionPolicy Bypass -File install.ps1`。
-3. macOS / Linux 在终端执行 `bash ./install.sh -i` 即可零网络完成安装。
+---
+
+### 📦 离线环境 / 企业内网安装 (Offline Setup)
+
+1. 前往 [Releases](https://github.com/good9527/Claude-Desktop-Chinese/releases) 下载最新的 `Claude-Desktop-Chinese-Universal-Offline.zip` 压缩包。
+2. 解压后在当前目录下运行：
+   - **Windows**：双击运行 `install.bat`，或在 PowerShell 执行 `powershell -ExecutionPolicy Bypass -File install.ps1`
+   - **macOS / Linux**：终端执行 `bash install.sh`
+3. 零外网依赖，纯本地高速完成安全注入。
 
 ---
 
-## ⚔️ 方案横向对比 | Comparison Matrix
+## 🩺 一键体检自愈诊断 (Doctor System)
 
-为什么本项目是 Claude Desktop 中文生态中最专业、覆盖最全面的汉化解决方案？
+想检测当前 Claude 客户端的汉化与权限健康状态？随时在终端运行内置的自愈医生：
 
-| 核心特性与维度 | 传统民间手动复制方案 | 本项目 (good9527/Claude-Desktop-Chinese) |
+```powershell
+powershell -ExecutionPolicy Bypass -File install.ps1 -Doctor
+```
+
+* 自动输出 100 分制健康度诊断表；
+* 深度检测：Windows 商店版受保护目录路径、中文字符统计、ACL 读写权限穿透状态、后台守护进程与三大 CDN 毫秒级网络测速；
+* 发现未授权或未汉化时一键给出修复命令。
+
+---
+
+## ⚔️ 方案横向对比 | Feature Comparison
+
+为什么本项目是目前 Claude 桌面版中文生态中最成熟、好评率最高的解决方案？
+
+| 核心维度 | 传统民间手动复制包 | 本项目 (good9527/Claude-Desktop-Chinese) |
 |---|:---:|:---:|
-| **Windows 商店 (MSIX) 权限问题** | ❌ 提示“拒绝访问 / 无权限”，手动修改 ACL 极其繁琐 | ✅ **智能权限穿透 (`takeown` + `icacls`)，自动弹出 UAC 一键解决** |
-| **微软商店升级后自动失效** | ❌ 商店每次更新新建文件夹，旧汉化直接灰飞烟灭 | ✅ **最高特权后台巡检 (`-RunLevel Highest`)，新版本自动接管热修复** |
-| **词条覆盖率与翻译品质** | ⚠️ 仅几千条核心词条，设置与高级面板大量英文 | ✅ **22,319+ 词条全量深度汉化 (99.8% 覆盖，含 Artifacts & MCP)** |
-| **增量字典安全合并** | ❌ 粗暴覆盖整个 json，遇到官方新 key 直接白屏崩溃 | ✅ **智能增量属性合并，官方新字段安全保留英文，绝不闪退** |
-| **AI 对话与代码输入保护** | ⚠️ 部分方案污染代码渲染或 Extended Thinking | ✅ **严禁篡改用户输入、Markdown 代码块与模型思考过程，原生透明** |
-| **工程质量与 CI 自动化** | ❌ 0 自动化测试 | ✅ **20 项自动化端到端测试全通过，GitHub Actions 多系统 CI 保证** |
+| **Windows 商店 (MSIX) 权限** | ❌ 提示“拒绝访问”，手动改 ACL 极繁琐 | ✅ **全自动权限穿透引擎，自动弹出 UAC 一键确认攻破** |
+| **微软商店升级后自动失效** | ❌ 每次更新新建目录，汉化瞬间丢失 | ✅ **最高特权守护巡检，新版本生成瞬间全自动静默接管** |
+| **词条覆盖率与翻译深度** | ⚠️ 仅几千条核心词，设置面板大量英文 | ✅ **22,319+ 词条全量覆盖 (99.8%)，包含 MCP 与 Artifacts** |
+| **增量字典安全合并** | ❌ 覆盖导致官方新 key 缺失闪退白屏 | ✅ **动态 AST 增量属性合并，官方新功能安全保留，绝不闪退** |
+| **模型思考与代码保护** | ⚠️ 误伤 Extended Thinking 或代码块 | ✅ **严格沙箱隔离，绝不篡改模型思考、Markdown 与用户输入** |
+| **工程质量与持续集成** | ❌ 0 自动化测试 | ✅ **20 项自动化端到端测试全通过，GitHub Actions 持续验证** |
 
 ---
 
-## 🛡️ 四级终极自愈守护架构 (4-Tier Self-Healing Architecture)
+## 🛡️ 独创四级自愈架构 | 4-Tier Architecture
 
+无论手机还是电脑端浏览，四级防御体系时刻守护你的中文界面：
+
+```mermaid
+graph LR
+    A["🛒 微软商店更新 Claude"] --> B["📁 生成新版 WindowsApps 目录"]
+    B --> C["Tier 1: 最高特权守护服务<br/>(无需弹窗直接接管新目录)"]
+    C --> D["Tier 2: 22,319 词条安全合并<br/>(保留官方新字段，注入中文)"]
+    D --> E["Tier 3: 内存流原位穿透写入<br/>(避开文件占用锁)"]
+    E --> F["Tier 4: 双重自启心跳巡检<br/>(开机唤醒 + 15min 心跳保活)"]
+    F --> G["✅ 永久纯净中文界面"]
 ```
-[ 微软商店后台静默更新 Claude ] ──> [ 创建新版本 WindowsApps 目录 ]
-                                                     │
-                                                     ▼
-【 Tier 1: 最高特权守护服务 】 (RunLevel Highest，无需弹窗直接接管新目录权限)
-                                                     │
-                                                     ▼
-【 Tier 2: 22,319 词条安全增量合并 】 (保留新版字段，注入高品质专业中文)
-                                                     │
-                                                     ▼
-【 Tier 3: 内存流原位原子写入 】 (直接流式覆写，杜绝 Windows 文件占用锁)
-                                                     │
-                                                     ▼
-【 Tier 4: 双重自启心跳巡检 】 (开机静默唤醒，每 15 分钟心跳检查保活)
-```
+
+1. **Tier 1 (最高特权自愈守护)**：配置系统最高执行等级 (`-RunLevel Highest`)，新版本生成瞬间无需再次弹窗，直接接管新目录；
+2. **Tier 2 (22,319 词条安全增量合并)**：采用安全键值差分算法，保留 Anthropic 官方未来新增字段，彻底杜绝闪退；
+3. **Tier 3 (流式原子安全写入)**：直接覆写目标语言文件，避免 Windows 运行时文件锁冲突；
+4. **Tier 4 (双模心跳守护保活)**：开机自动拉起守护，每 15 分钟后台轻量心跳检测，确保补丁始终生效。
 
 ---
 
-## 🤖 常见问答 / FAQ（AI 检索与疑难解答）
+## 🤖 常见问答 | FAQ
 
-### Q1: Claude 桌面版怎么汉化？
-**答**：在 Windows PowerShell 终端中执行一行命令：
-```powershell
-iwr -useb https://fastly.jsdelivr.net/gh/good9527/Claude-Desktop-Chinese@main/install.ps1 | iex
-```
-系统会弹出用户账户控制（UAC）确认窗口，点击“是”即可在 2 秒内完成全量汉化并开启自动守护。
+<details open>
+<summary><b>Q1: 为什么从微软商店下载的 Claude 汉化时会弹窗提示授权？</b></summary>
+<b>答</b>：因为 Windows 商店应用存放在受微软最高安全策略保护的 <code>C:\Program Files\WindowsApps</code> 目录下，默认由 <code>TrustedInstaller</code> 系统权限锁死。本补丁采用原生系统安全机制，只需点击一次 UAC 确认框的“是”，即可自动攻破权限锁，省去手动输几十条 CMD 命令的巨大麻烦。
+</details>
 
-### Q2: 为什么从微软商店下载的 Claude 汉化时提示“没有权限/拒绝访问”？
-**答**：因为 Windows 商店应用存放在受系统保护的 `C:\Program Files\WindowsApps` 目录下，所有者为系统级 `TrustedInstaller`。普通脚本无法写入。本项目内置全自动权限穿透引擎，自动接管所有权并授予当前用户完全控制权限，彻底解决权限拒绝问题。
+<details>
+<summary><b>Q2: 汉化完成后需要重启软件吗？</b></summary>
+<b>答</b>：安装脚本执行完毕后，只需彻底关闭 Claude 客户端并重新打开，或者在窗口内按下 <code>Ctrl + R</code> 刷新页面，即可立即看到完整的中文界面。
+</details>
 
-### Q3: 汉化会破坏我的 MCP (Model Context Protocol) 或 Artifacts 功能吗？
-**答**：**绝对不会！** 补丁仅针对 UI 界面与操作文案进行本地化，严禁修改底层网络协议、模型思考（Extended Thinking）、MCP 配置文件以及用户提示词输入，100% 保持官方原生能力。
+<details>
+<summary><b>Q3: 汉化会影响我的 MCP (Model Context Protocol) 或 Artifacts 吗？</b></summary>
+<b>答</b>：<b>绝对不会！</b> 补丁只对界面文案与交互按钮进行中文化，严禁改动任何 MCP 通信协议、配置文件或者模型推理过程，官方所有原生高级特性 100% 完美运作。
+</details>
 
-### Q4: 如何一键恢复官方原版英文？
-**答**：安装时会自动在本地创建纯净的官方备份（`en-US-original.json`）。运行带 `-Restore` 参数的命令：
-```powershell
-powershell -ExecutionPolicy Bypass -File install.ps1 -Restore
-```
-即可 100% 精确还原官方英文原版。
+<details>
+<summary><b>Q4: 如何一键恢复官方英文原版？</b></summary>
+<b>答</b>：安装时已自动备份官方纯净原版。如需还原，只需在终端执行：
+<pre>powershell -ExecutionPolicy Bypass -File install.ps1 -Restore</pre>
+即可 100% 字节级还原。
+</details>
+
+---
+
+## 🔗 开源生态矩阵联动
+
+如果你同时在日常编码与生产力中使用 **Google Antigravity 智能体编程助手**，欢迎体验我们的姐妹开源项目：
+
+👉 [**good9527/Antigravity-Chinese-Patch**](https://github.com/good9527/Antigravity-Chinese-Patch)  
+*Google Antigravity 全平台通用中文汉化补丁 · 零依赖原生热注入 · 动态额度倒计时解析 · 官方更新自动保活*
 
 ---
 
@@ -123,14 +166,9 @@ powershell -ExecutionPolicy Bypass -File install.ps1 -Restore
   </a>
 </p>
 
-## 🔍 搜索引擎与 AI 检索关键词 | Search Index & Tags
-
-`Claude Desktop 汉化` · `Claude 中文补丁` · `Claude 桌面版 中文` · `Claude 怎么改成中文` · `Claude Desktop Chinese Patch` · `Claude Localization` · `Claude 官方更新自愈汉化` · `Claude UI Translation` · `Anthropic Claude 汉化包` · `Claude MCP 中文` · `Claude Artifacts 汉化` · `Claude Desktop AppX 汉化` · `Claude 商店版汉化权限拒绝`
-
 ---
 
 ## ⚖️ 免责声明 | Disclaimer
 
 - 本项目为开源技术研究成果，仅供个人学习与交流使用，不含任何商业盈利行为。
 - 补丁所翻译的界面文案及原客户端版权均归 Anthropic 官方所有。
-- This project is an open-source localization research toolkit for personal learning purposes only. All intellectual properties belong to their respective copyright holders.
