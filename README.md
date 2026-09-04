@@ -24,6 +24,11 @@
 
 ## ⚡ 极速一键安装 | Quick Install
 
+<p align="center">
+  <img src=".github/assets/demo-terminal.svg" alt="1-Click Installation Terminal Animation" width="100%" />
+</p>
+
+
 > [!IMPORTANT]
 > ### 💡 无论 Windows 商店版 (MSIX) 还是传统 Win32 版，终端运行这一行即可全自动搞定：
 
@@ -84,6 +89,11 @@ powershell -ExecutionPolicy Bypass -File install.ps1 -Doctor
 ---
 
 ## ⚔️ 方案横向对比 | Feature Comparison
+
+<p align="center">
+  <img src=".github/assets/before-after.svg" alt="Before vs After Comparison" width="100%" />
+</p>
+
 
 为什么本项目是目前 Claude 桌面版中文生态中最成熟、好评率最高的解决方案？
 

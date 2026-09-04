@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 300" width="800" height="300">
+  <defs>
+    <linearGradient id="badBgC" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#181113"/>
+      <stop offset="100%" stop-color="#241217"/>
+    </linearGradient>
+    <linearGradient id="goodBgC" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#141a14"/>
+      <stop offset="100%" stop-color="#11271b"/>
+    </linearGradient>
+    <style>
+      .card-title { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 16px; font-weight: bold; }
+      .row-label { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 12px; fill: #a8a29e; }
+      .text-bad { font-family: Consolas, monospace; font-size: 13px; fill: #f87171; font-weight: 600; }
+      .text-good { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 13.5px; fill: #4ade80; font-weight: 700; }
+    </style>
+  </defs>
+
+  <rect width="800" height="300" rx="14" fill="#120f0e"/>
+
+  <!-- Left Column: Bad -->
+  <g transform="translate(20, 20)">
+    <rect width="365" height="260" rx="12" fill="url(#badBgC)" stroke="#7f1d1d" stroke-width="1.5"/>
+    <text x="20" y="36" fill="#ef4444" class="card-title">❌ 传统民间手动复制包</text>
+    
+    <g transform="translate(20, 65)">
+      <text x="0" y="0" class="row-label">Windows 商店版权限 (WindowsApps 受保护):</text>
+      <rect x="0" y="8" width="325" height="32" rx="6" fill="#2d1519" stroke="#991b1b" stroke-width="1"/>
+      <text x="12" y="29" class="text-bad">Access is denied (拒绝访问 / 权限不足报错)</text>
+    </g>
+
+    <g transform="translate(20, 130)">
+      <text x="0" y="0" class="row-label">微软商店后台更新 (每次更新新建目录):</text>
+      <rect x="0" y="8" width="325" height="32" rx="6" fill="#2d1519" stroke="#991b1b" stroke-width="1"/>
+      <text x="12" y="29" class="text-bad">更新后汉化瞬间丢失，重装极其繁琐</text>
+    </g>
+
+    <g transform="translate(20, 195)">
+      <text x="0" y="0" class="row-label">粗暴全文件覆盖 (官方新 key 缺失导致闪退):</text>
+      <rect x="0" y="8" width="325" height="32" rx="6" fill="#2d1519" stroke="#991b1b" stroke-width="1"/>
+      <text x="12" y="29" class="text-bad">客户端白屏、设置闪退、丢失新功能</text>
+    </g>
+  </g>
+
+  <!-- Right Column: Good -->
+  <g transform="translate(415, 20)">
+    <rect width="365" height="260" rx="12" fill="url(#goodBgC)" stroke="#166534" stroke-width="1.5"/>
+    <text x="20" y="36" fill="#22c55e" class="card-title">✅ 本项目企业级深度自愈方案</text>
+
+    <g transform="translate(20, 65)">
+      <text x="0" y="0" class="row-label">UAC 自动提权 (一键全自动穿透权限锁):</text>
+      <rect x="0" y="8" width="325" height="32" rx="6" fill="#132c22" stroke="#15803d" stroke-width="1"/>
+      <text x="12" y="29" class="text-good">自动弹出 UAC 窗口，一键攻破 TrustedInstaller</text>
+    </g>
+
+    <g transform="translate(20, 130)">
+      <text x="0" y="0" class="row-label">最高特权计划任务 + 心跳自愈双保险:</text>
+      <rect x="0" y="8" width="325" height="32" rx="6" fill="#132c22" stroke="#15803d" stroke-width="1"/>
+      <text x="12" y="29" class="text-good">商店静默升级后 50ms 自动接管，永不失效</text>
+    </g>
+
+    <g transform="translate(20, 195)">
+      <text x="0" y="0" class="row-label">22,319 词条智能增量属性合并:</text>
+      <rect x="0" y="8" width="325" height="32" rx="6" fill="#132c22" stroke="#15803d" stroke-width="1"/>
+      <text x="12" y="29" class="text-good">保留官方全部新特性，覆盖 Artifacts &amp; MCP</text>
+    </g>
+  </g>
+</svg>
