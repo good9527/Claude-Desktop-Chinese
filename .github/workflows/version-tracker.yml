@@ -19,10 +19,15 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       - name: Run End-to-End Test Suite
         shell: pwsh
         run: |
-          powershell -ExecutionPolicy Bypass -File tests/e2e_tests.ps1
+          python tests/test_runner.py
 
       - name: Package Claude Universal Offline Installation Bundle
         shell: pwsh
@@ -32,8 +37,8 @@ jobs:
           
           Copy-Item -Path "dist" -Destination $releaseDir -Recurse -Force
           Copy-Item -Path "install.ps1" -Destination $releaseDir -Force
-          Copy-Item -Path "install.bat" -Destination $releaseDir -Force
-          Copy-Item -Path "watcher" -Destination $releaseDir -Recurse -Force
+          Copy-Item -Path "install.bat" -Destination $releaseDir -Force -ErrorAction SilentlyContinue
+          Copy-Item -Path "watcher" -Destination $releaseDir -Recurse -Force -ErrorAction SilentlyContinue
           Copy-Item -Path "README.md" -Destination $releaseDir -Force
           Copy-Item -Path "LICENSE" -Destination $releaseDir -Force -ErrorAction SilentlyContinue
 
@@ -41,13 +46,13 @@ jobs:
           Compress-Archive -Path "$releaseDir\*" -DestinationPath $zipName -Force
           Write-Host "Successfully packaged $zipName" -ForegroundColor Green
 
-      - name: Upload Release Asset to Latest Release
+      - name: Upload Release Asset
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: pwsh
         run: |
           $zipPath = "Claude-Desktop-Chinese-Universal-Offline.zip"
           if (Test-Path $zipPath) {
-            gh release upload latest $zipPath --clobber
-            Write-Host "Updated latest release asset on GitHub." -ForegroundColor Green
+            gh release upload v1.0.0 $zipPath --clobber
+            Write-Host "Updated release v1.0.0 asset on GitHub." -ForegroundColor Green
           }
