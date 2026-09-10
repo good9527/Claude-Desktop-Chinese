@@ -53,6 +53,8 @@ jobs:
         run: |
           $zipPath = "Claude-Desktop-Chinese-Universal-Offline.zip"
           if (Test-Path $zipPath) {
-            gh release upload v1.0.0 $zipPath --clobber
-            Write-Host "Updated release v1.0.0 asset on GitHub." -ForegroundColor Green
+            $tag = gh release view --json tagName -q .tagName 2>$null
+            if (-not $tag) { $tag = "v1.0.0" }
+            gh release upload $tag $zipPath --clobber
+            Write-Host "Updated release $tag asset on GitHub." -ForegroundColor Green
           }

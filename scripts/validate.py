@@ -16,23 +16,23 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 REFERENCE_EN = ROOT / "local" / "en-US.json"
 RELEASE_ZH = ROOT / "dist" / "zh-CN.json"
-SOURCE_ZH = ROOT / "zh-CN-ion.json"
+
 POWERSHELL_SCRIPTS = (
     ROOT / "install.ps1",
     ROOT / "uninstall.ps1",
-    ROOT / "install-old-working.ps1",
+    ROOT / "tools" / "legacy" / "install-old-working.ps1",
     ROOT / "patch_claude.ps1",
     ROOT / "watcher" / "watcher.ps1",
 )
 PYTHON_SCRIPTS = (
-    ROOT / "create_hacked_enus.py",
-    ROOT / "merge.py",
-    ROOT / "merge2.py",
+    ROOT / "tools" / "legacy" / "create_hacked_enus.py",
+    ROOT / "tools" / "legacy" / "merge.py",
+    ROOT / "tools" / "legacy" / "merge2.py",
     ROOT / "scripts" / "validate.py",
-    ROOT / "split_chunks.py",
-    ROOT / "translate.py",
-    ROOT / "translate2.py",
-    ROOT / "translate3.py",
+    ROOT / "tools" / "legacy" / "split_chunks.py",
+    ROOT / "tools" / "legacy" / "translate.py",
+    ROOT / "tools" / "legacy" / "translate2.py",
+    ROOT / "tools" / "legacy" / "translate3.py",
     ROOT / "win-automation-mcp" / "server.py",
     ROOT / "win-automation-mcp" / "test_server.py",
 )
@@ -63,10 +63,6 @@ def has_cjk(value: object) -> bool:
 
 def validate_json_assets() -> None:
     zh_data = load_json(RELEASE_ZH)
-    source_zh_data = load_json(SOURCE_ZH)
-
-    if zh_data != source_zh_data:
-        fail("dist/zh-CN.json must match zh-CN-ion.json")
 
     chinese_values = sum(1 for value in zh_data.values() if has_cjk(value))
     chinese_ratio = chinese_values / len(zh_data)

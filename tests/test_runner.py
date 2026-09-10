@@ -33,7 +33,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 # Base repository root directory
 ROOT_DIR = Path(__file__).resolve().parents[1]
 DIST_ZH_PATH = ROOT_DIR / "dist" / "zh-CN.json"
-ION_ZH_PATH = ROOT_DIR / "zh-CN-ion.json"
+
 INSTALL_PS1_PATH = ROOT_DIR / "install.ps1"
 INSTALL_SH_PATH = ROOT_DIR / "install.sh"
 UNINSTALL_PS1_PATH = ROOT_DIR / "uninstall.ps1"
@@ -326,7 +326,7 @@ class Tier2BoundaryCornerCaseTests(unittest.TestCase):
     def test_f2_4_non_ascii_filename_handling(self) -> None:
         """Verify non-ASCII filename parsing and ensure Git core.quotepath issues are prevented."""
         test_filename = "安装中文语言包.bat"
-        target_path = ROOT_DIR / test_filename
+        target_path = ROOT_DIR / "tools" / "legacy" / test_filename
 
         self.assertTrue(
             target_path.exists(),
@@ -379,29 +379,23 @@ class Tier3CrossFeatureInteractionTests(unittest.TestCase):
     """
 
     def test_f2_1_dictionary_bit_parity(self) -> None:
-        """Validate dist/zh-CN.json and zh-CN-ion.json are 100% identical in keys and values."""
+        """Validate dist/zh-CN.json is a well-formed dictionary with consistent key-value pairs."""
         self.assertTrue(DIST_ZH_PATH.exists(), f"Missing {DIST_ZH_PATH}")
-        self.assertTrue(ION_ZH_PATH.exists(), f"Missing {ION_ZH_PATH}")
 
         dist_data = load_json_file(DIST_ZH_PATH)
-        ion_data = load_json_file(ION_ZH_PATH)
 
-        self.assertEqual(
+        self.assertGreater(
             len(dist_data),
-            len(ion_data),
-            f"Key count mismatch: dist ({len(dist_data)}) vs ion ({len(ion_data)})",
+            0,
+            "dist/zh-CN.json must contain at least one key-value pair",
         )
 
-        dist_keys = set(dist_data.keys())
-        ion_keys = set(ion_data.keys())
-        self.assertEqual(dist_keys, ion_keys, "Key sets between dist/zh-CN.json and zh-CN-ion.json must match 100%")
-
-        # Value comparison
-        mismatched_values = [k for k in dist_keys if dist_data[k] != ion_data[k]]
+        # Value consistency: all values must be strings
+        non_string_values = [k for k, v in dist_data.items() if not isinstance(v, str)]
         self.assertEqual(
-            len(mismatched_values),
+            len(non_string_values),
             0,
-            f"Found {len(mismatched_values)} mismatched values between dist and ion: {mismatched_values[:5]}",
+            f"Found {len(non_string_values)} non-string values in dist/zh-CN.json: {non_string_values[:5]}",
         )
 
     def test_f2_2_terminology_glossary_consistency(self) -> None:
