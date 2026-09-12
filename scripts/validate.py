@@ -33,8 +33,6 @@ PYTHON_SCRIPTS = (
     ROOT / "tools" / "legacy" / "translate.py",
     ROOT / "tools" / "legacy" / "translate2.py",
     ROOT / "tools" / "legacy" / "translate3.py",
-    ROOT / "win-automation-mcp" / "server.py",
-    ROOT / "win-automation-mcp" / "test_server.py",
 )
 MIN_COVERAGE = 0.98
 MIN_CHINESE_RATIO = 0.90
@@ -166,7 +164,7 @@ def validate_no_local_absolute_paths() -> None:
     }
 
     for path in tracked_text_files():
-        if "win-automation-mcp" in path.parts or "tests" in path.parts:
+        if "tests" in path.parts:
             continue
         if path.suffix.lower() not in scanned_suffixes:
             continue

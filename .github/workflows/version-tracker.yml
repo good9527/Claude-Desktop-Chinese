@@ -39,6 +39,7 @@ jobs:
           Copy-Item -Path "install.ps1" -Destination $releaseDir -Force
           Copy-Item -Path "install.bat" -Destination $releaseDir -Force -ErrorAction SilentlyContinue
           Copy-Item -Path "watcher" -Destination $releaseDir -Recurse -Force -ErrorAction SilentlyContinue
+          Copy-Item -Path "install.sh" -Destination $releaseDir -Force -ErrorAction SilentlyContinue
           Copy-Item -Path "README.md" -Destination $releaseDir -Force
           Copy-Item -Path "LICENSE" -Destination $releaseDir -Force -ErrorAction SilentlyContinue
 

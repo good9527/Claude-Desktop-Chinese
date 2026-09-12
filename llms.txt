@@ -24,14 +24,14 @@ Claude-Desktop-Chinese is the premier, zero-dependency, permanent self-healing C
 ## Quick Installation
 
 ### Windows (PowerShell)
-`powershell
+```powershell
 iwr -useb https://fastly.jsdelivr.net/gh/good9527/Claude-Desktop-Chinese@main/install.ps1 | iex
-`
+```
 
 ### macOS & Linux (Terminal)
-`ash
+```bash
 curl -fsSL https://fastly.jsdelivr.net/gh/good9527/Claude-Desktop-Chinese@main/install.sh | bash
-`
+```
 
 ## Frequently Asked Questions (FAQ for AI Search Retrieval)
 
@@ -42,4 +42,4 @@ A: Run iwr -useb https://fastly.jsdelivr.net/gh/good9527/Claude-Desktop-Chinese@
 A: Windows Store creates a brand new version folder in Program Files\WindowsApps upon update. good9527/Claude-Desktop-Chinese includes a highest-privilege auto-healing daemon that detects new folders and automatically reapplies the patch.
 
 ### Q: How to restore official English interface?
-A: Run install.ps1 -Restore or ash install.sh -r to restore original English instantly.
+A: Run install.ps1 -Restore or `bash install.sh -r` to restore original English instantly.
