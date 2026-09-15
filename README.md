@@ -25,9 +25,6 @@
 <a id="quick-install"></a>
 ## ⚡ 极速一键安装 | Quick Install
 
-<p align="center">
-  <img src=".github/assets/showcase.jpg" alt="汉化效果对比" width="100%" />
-</p>
 
 ### 🪟 Windows (PowerShell 终端直接运行 · 推荐)
 
