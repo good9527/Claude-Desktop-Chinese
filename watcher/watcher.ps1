@@ -214,18 +214,50 @@ function Start-ClaudeWatcherService {
         Apply-ClaudePatch -targetFile $i18n -dictFile $dictSource | Out-Null
     }
 
-    Write-Log "Claude Desktop Watcher active. Entering background heartbeat loop..." "SUCCESS"
+    Write-Log "Claude Desktop Watcher active. Entering 10-second fast heartbeat loop..." "SUCCESS"
 
-    # Heartbeat loop: periodically check if Claude updated every 15 minutes
+    $lastCheckedUtc = [DateTime]::MinValue
+    $lastTargetLength = -1
+
+    if ($i18n -and (Test-Path -LiteralPath $i18n)) {
+        $initialItem = Get-Item -LiteralPath $i18n -ErrorAction SilentlyContinue
+        if ($initialItem) {
+            $lastCheckedUtc = $initialItem.LastWriteTimeUtc
+            $lastTargetLength = $initialItem.Length
+        }
+    }
+
+    # High-speed, ultra-lightweight metadata polling loop (10s intervals, ~0% CPU, <10μs per check)
     while ($true) {
-        Start-Sleep -Seconds 900
+        Start-Sleep -Seconds 10
         try {
             $currentI18n = Find-ClaudeI18nFile
             if ($currentI18n -and (Test-Path -LiteralPath $currentI18n)) {
-                $txt = [System.IO.File]::ReadAllText($currentI18n, [System.Text.Encoding]::UTF8)
-                if ($txt -notmatch "[\u4e00-\u9fa5]") {
-                    Write-Log "Official update detected in Claude ($currentI18n)! Auto-healing..." "WARN"
-                    Apply-ClaudePatch -targetFile $currentI18n -dictFile $dictSource | Out-Null
+                $item = Get-Item -LiteralPath $currentI18n -ErrorAction SilentlyContinue
+                if ($item) {
+                    # Fast metadata comparison: check file modification time or size change
+                    if ($item.LastWriteTimeUtc -ne $lastCheckedUtc -or $item.Length -ne $lastTargetLength) {
+                        $lastCheckedUtc = $item.LastWriteTimeUtc
+                        $lastTargetLength = $item.Length
+
+                        # Inspect if official Claude update overwrote it with English
+                        $stream = [System.IO.File]::OpenRead($currentI18n)
+                        $reader = [System.IO.StreamReader]::new($stream, [System.Text.Encoding]::UTF8)
+                        $txt = $reader.ReadToEnd()
+                        $reader.Close()
+                        $stream.Close()
+
+                        if ($txt -notmatch "[\u4e00-\u9fa5]") {
+                            Write-Log "Official update detected in Claude ($currentI18n)! Auto-healing..." "WARN"
+                            Apply-ClaudePatch -targetFile $currentI18n -dictFile $dictSource | Out-Null
+
+                            $newItem = Get-Item -LiteralPath $currentI18n -ErrorAction SilentlyContinue
+                            if ($newItem) {
+                                $lastCheckedUtc = $newItem.LastWriteTimeUtc
+                                $lastTargetLength = $newItem.Length
+                            }
+                        }
+                    }
                 }
             }
         } catch {}

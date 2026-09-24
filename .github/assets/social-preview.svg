@@ -56,7 +56,7 @@
     ⚡ 完美解决 Windows 商店版受保护目录 · UAC 自动提权 · 永不失效
   </text>
   <text x="100" y="340" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', sans-serif" font-size="18" font-weight="400" fill="#a8a29e">
-    深度攻克 WindowsApps 权限锁与商店自动覆盖痛点（TakeOwn + ICACLS 穿透 + 最高权限计划任务 + 15分钟心跳双保险）
+    深度攻克 WindowsApps 权限锁与商店自动覆盖痛点（TakeOwn + ICACLS 穿透 + 最高权限计划任务 + 10秒高速心跳极速自愈）
   </text>
 
   <!-- Badges Row -->

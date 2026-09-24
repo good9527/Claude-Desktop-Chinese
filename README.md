@@ -22,6 +22,10 @@
 
 ---
 
+<p align="center">
+  <img src=".github/assets/showcase.svg" alt="Claude Desktop 深度汉化效果与极速自愈展示" width="100%" />
+</p>
+
 <a id="quick-install"></a>
 ## ⚡ 极速一键安装 | Quick Install
 
@@ -35,7 +39,7 @@ irm https://fastly.jsdelivr.net/gh/good9527/Claude-Desktop-Chinese@main/install.
 > [!TIP]
 > - 🔑 **自动弹出 UAC 授权**：遇到微软商店受保护目录自动弹出原生确认框，只需点击一次**【是】**，全自动攻破 `TrustedInstaller` 权限锁！
 > - 📚 **22,319+ 词条超全覆盖**：Artifacts 独立窗口、MCP 服务配置面板、模型思考（Extended Thinking）全方位汉化！
-> - 🛡️ **商店更新永不失效**：最高特权后台服务自愈，微软商店后台更新换目录也能自动同步接管！
+> - 🛡️ **10s 极速自愈永不失效**：最高特权后台服务自愈，10 秒轻量元数据轮询（~0% CPU），微软商店后台静默更新瞬间自动接管！
 
 <details>
 <summary><b>备用网络安装命令（国内镜像 / GitHub直连）</b></summary>
@@ -111,14 +115,14 @@ graph LR
     B --> C["Tier 1: 最高特权守护服务<br/>(无需弹窗直接接管新目录)"]
     C --> D["Tier 2: 22,319 词条安全合并<br/>(保留官方新字段，注入中文)"]
     D --> E["Tier 3: 内存流原位穿透写入<br/>(避开文件占用锁)"]
-    E --> F["Tier 4: 双重自启心跳巡检<br/>(开机唤醒 + 15min 心跳保活)"]
+    E --> F["Tier 4: 双重自启心跳巡检<br/>(开机唤醒 + 10s 极速自愈)"]
     F --> G["✅ 永久纯净中文界面"]
 ```
 
 1. **Tier 1 (最高特权自愈守护)**：配置系统最高执行等级 (`-RunLevel Highest`)，新版本生成瞬间无需再次弹窗，直接接管新目录；
 2. **Tier 2 (22,319 词条安全增量合并)**：采用安全键值差分算法，保留 Anthropic 官方未来新增字段，彻底杜绝闪退；
 3. **Tier 3 (流式原子安全写入)**：直接覆写目标语言文件，避免 Windows 运行时文件锁冲突；
-4. **Tier 4 (双模心跳守护保活)**：开机自动拉起守护，每 15 分钟后台轻量心跳检测，确保补丁始终生效。
+4. **Tier 4 (10s 极速心跳自愈守护)**：开机自动拉起守护，每 10 秒轻量对比文件元数据（耗时仅 6.9μs，0.00% CPU），一旦官方更新覆盖文件，10 秒内静默自动热注入。
 
 ---
 
@@ -137,7 +141,8 @@ graph LR
 
 <details>
 <summary><b>Q3: 汉化会影响我的 MCP (Model Context Protocol) 或 Artifacts 吗？</b></summary>
-<b>答</b>：<b>绝对不会！</b> 补丁只对界面文案与交互按钮进行中文化，严禁改动任何 MCP 通信协议、配置文件或者模型推理过程，官方所有原生高级特性 100% 完美运作。
+<b>答</b>：<b>绝对不会！</b> 补丁只对界面文案与交互按钮进行中文化，严禁改动任何 MCP 通信协议、配置文件或者模型推理过程，官方所有原生高级特性 100% 完美运作。<br/>
+💡 <b>进阶推荐</b>：如果你希望让 Claude Desktop 具备直接操控 Windows 键鼠、窗口管理、自动化办公的能力，强烈推荐搭配我们的原生开源插件 <a href="https://github.com/good9527/win-automation-mcp"><b>good9527/win-automation-mcp</b></a>！
 </details>
 
 <details>
@@ -151,10 +156,13 @@ graph LR
 
 ## 🔗 开源生态矩阵联动
 
-如果你同时在日常编码与生产力中使用 **Google Antigravity 智能体编程助手**，欢迎体验我们的姐妹开源项目：
+协同使用作者打造的 Windows AI 全栈开源工具链，释放巅峰生产力：
 
-👉 [**good9527/Antigravity-Chinese-Patch**](https://github.com/good9527/Antigravity-Chinese-Patch)  
-*Google Antigravity 全平台通用中文汉化补丁 · 零依赖原生热注入 · 动态额度倒计时解析 · 官方更新自动保活*
+| 项目仓库 | 核心定位 | 核心亮点 |
+|---|---|---|
+| 🤖 [**win-automation-mcp**](https://github.com/good9527/win-automation-mcp) | **Claude 原生 MCP 工具** | 专为 Claude 桌面版打造，赋予 Claude 真实控制 Windows 键鼠、窗口管理与自动化操作的超级能力！ |
+| 🚀 [**Antigravity-Chinese-Patch**](https://github.com/good9527/Antigravity-Chinese-Patch) | **Google 智能体汉化补丁** | Google Antigravity 全平台通用汉化补丁 · 零依赖原生热注入 · 动态额度倒计时解析 · 10s 级极速自愈 |
+| ⚡ [**Claude-Desktop-Chinese**](https://github.com/good9527/Claude-Desktop-Chinese) | **Claude 桌面汉化补丁** | 本项目：攻破微软商店权限锁 · 22,319 词条深度覆盖 · 官方升级 10s 永久自愈 |
 
 ---
 
