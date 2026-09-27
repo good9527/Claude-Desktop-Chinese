@@ -172,14 +172,32 @@ function Set-DaemonState {
         }
 
         $cmd = "powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$scriptPath`" -RunOnce -Quiet"
-        Set-ItemProperty -Path $regRunKey -Name $regRunName -Value $cmd -Force -ErrorAction SilentlyContinue
-
+        
+        # Layer 1: Scheduled Task (Elevated)
         try {
             $actionObj = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$scriptPath`""
             $triggerObj = New-ScheduledTaskTrigger -AtLogOn
             $settingsObj = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit 0 -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)
             $principalObj = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive -RunLevel Highest
             Register-ScheduledTask -TaskName $taskName -Action $actionObj -Trigger $triggerObj -Settings $settingsObj -Principal $principalObj -Force -ErrorAction SilentlyContinue | Out-Null
+        } catch {}
+
+        # Layer 2: HKCU Run registry autostart
+        Set-ItemProperty -Path $regRunKey -Name $regRunName -Value $cmd -Force -ErrorAction SilentlyContinue
+
+        # Layer 3: Shell:Startup User Startup Folder (100% reliable for standard non-admin accounts)
+        try {
+            $startupDir = [Environment]::GetFolderPath('Startup')
+            if (Test-Path $startupDir) {
+                $wsh = New-Object -ComObject WScript.Shell
+                $lnkPath = Join-Path $startupDir "ClaudeDesktopChineseWatcher.lnk"
+                $shortcut = $wsh.CreateShortcut($lnkPath)
+                $shortcut.TargetPath = "powershell.exe"
+                $shortcut.Arguments = "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$scriptPath`""
+                $shortcut.WorkingDirectory = $cacheDir
+                $shortcut.WindowStyle = 7
+                $shortcut.Save()
+            }
         } catch {}
 
         try {
@@ -192,17 +210,25 @@ function Set-DaemonState {
             }
         } catch {}
 
-        Write-Log "Auto-healing daemon enabled successfully." "SUCCESS"
+        Write-Log "Auto-healing daemon enabled successfully (Triple-Layer Autostart: Task + Registry + Startup Folder)." "SUCCESS"
         return $true
     } elseif ($Action -eq "disable") {
         Remove-ItemProperty -Path $regRunKey -Name $regRunName -ErrorAction SilentlyContinue
         try { Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue } catch {}
+        try {
+            $startupDir = [Environment]::GetFolderPath('Startup')
+            if (Test-Path $startupDir) {
+                Remove-Item (Join-Path $startupDir "ClaudeDesktopChineseWatcher.lnk") -Force -ErrorAction SilentlyContinue
+            }
+        } catch {}
         Write-Log "Auto-healing daemon disabled." "WARN"
         return $true
     } elseif ($Action -eq "status") {
         $regExists = (Get-ItemProperty -Path $regRunKey -Name $regRunName -ErrorAction SilentlyContinue) -ne $null
         $taskExists = (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) -ne $null
-        return ($regExists -or $taskExists)
+        $startupDir = [Environment]::GetFolderPath('Startup')
+        $startupExists = if (Test-Path $startupDir) { Test-Path (Join-Path $startupDir "ClaudeDesktopChineseWatcher.lnk") } else { $false }
+        return ($regExists -or $taskExists -or $startupExists)
     }
 }
 
